@@ -619,7 +619,7 @@ rb_ext_Checkbox_SetValue(VALUE self, VALUE value)
   newtComponent co;
 
   Data_Get_Struct(self, struct newtComponent_struct, co);
-  if (RSTRING(value)->len > 0) {
+  if (RSTRING_LEN(value) > 0) {
 	newtCheckboxSetValue(co, StringValuePtr(value)[0]);
   }
   return Qnil;
