@@ -364,6 +364,15 @@ static VALUE rb_ext_Widget_callback(int argc, VALUE argv[], VALUE self)
   return value;
 }
 
+static VALUE rb_ext_Widget_takesFocus(VALUE self, VALUE index)
+{
+  newtComponent form;
+
+  Data_Get_Struct(self, struct newtComponent_struct, form);
+  newtComponentTakesFocus(form, NUM2INT(index));
+  return Qnil;
+}
+
 static VALUE rb_ext_Widget_equal(VALUE self, VALUE widget)
 {
   newtComponent co, co2;
@@ -1084,6 +1093,7 @@ void Init_ruby_newt(){
 
   cWidget = rb_define_class_under(mNewt, "Widget", rb_cObject);
   rb_define_method(cWidget, "callback", rb_ext_Widget_callback, -1);
+  rb_define_method(cWidget, "takesFocus", rb_ext_Widget_takesFocus, 1);
   rb_define_method(cWidget, "==", rb_ext_Widget_equal, 1);
 
   cCompactButton = rb_define_class_under(mNewt, "CompactButton", cWidget);
