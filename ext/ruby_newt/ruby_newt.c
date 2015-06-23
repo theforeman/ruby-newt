@@ -1,5 +1,5 @@
 /*
- * Published under MIT license, see LICENSE and gemspec
+ * Published under MIT license, see README.
  */
 
 #include <ruby.h>
@@ -54,7 +54,7 @@ static VALUE rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDo
   VALUE ary = rb_ary_new2(3);
 
   p = newtReflowText(StringValuePtr(text), NUM2INT(width), NUM2INT(flexDown), NUM2INT(flexUp),
-           &actualWidth, &actualHeight);
+      &actualWidth, &actualHeight);
 
   rb_ary_push(ary, rb_str_new2(p));
   rb_ary_push(ary, INT2NUM(actualWidth));
@@ -132,10 +132,10 @@ static VALUE rb_ext_Screen_ClearKeyBuffer()
  *
  */
 static VALUE rb_ext_Screen_OpenWindow(VALUE self, VALUE left, VALUE top,
-             VALUE width, VALUE height, VALUE title)
+    VALUE width, VALUE height, VALUE title)
 {
   return INT2NUM(newtOpenWindow(NUM2INT(left), NUM2INT(top),
-                NUM2INT(width), NUM2INT(height), StringValuePtr(title)));
+        NUM2INT(width), NUM2INT(height), StringValuePtr(title)));
 }
 
 /*
@@ -269,10 +269,10 @@ static VALUE rb_ext_Screen_Size(VALUE self)
 static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE args)
 {
   if (RARRAY_LEN(args) < 3) {
-  rb_raise(rb_eArgError, "3 arguments required");
+    rb_raise(rb_eArgError, "3 arguments required");
   } else {
 
-  newtWinMessage(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]), StringValuePtr(RARRAY_PTR(args)[2]));
+    newtWinMessage(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]), StringValuePtr(RARRAY_PTR(args)[2]));
   }
 
   return Qnil;
@@ -285,11 +285,11 @@ static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE args)
 static VALUE rb_ext_Screen_WinChoice(VALUE self, VALUE args)
 {
   if (RARRAY_LEN(args) < 4) {
-  rb_raise(rb_eArgError, "4 arguments required");
+    rb_raise(rb_eArgError, "4 arguments required");
   } else {
 
-  newtWinChoice(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
-           StringValuePtr(RARRAY_PTR(args)[2]), StringValuePtr(RARRAY_PTR(args)[3]));
+    newtWinChoice(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
+        StringValuePtr(RARRAY_PTR(args)[2]), StringValuePtr(RARRAY_PTR(args)[3]));
   }
 
   return Qnil;
@@ -307,41 +307,41 @@ static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
 
   len = RARRAY_LEN(args);
   if (len == 8) {
-  Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
+    Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
 
-  len = RARRAY_LEN(RARRAY_PTR(args)[6]);
-  cptr = ALLOCA_N(char*, len + 1);
-  for (i = 0; i < len; i++) {
-    Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
-    cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
-  }
-  cptr[len] = NULL;
+    len = RARRAY_LEN(RARRAY_PTR(args)[6]);
+    cptr = ALLOCA_N(char*, len + 1);
+    for (i = 0; i < len; i++) {
+      Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
+      cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
+    }
+    cptr[len] = NULL;
 
-  newtWinMenu(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
+    newtWinMenu(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
         NUM2INT(RARRAY_PTR(args)[2]),
         NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
         NUM2INT(RARRAY_PTR(args)[5]),
         cptr, &listItem, StringValuePtr(RARRAY_PTR(args)[7]), NULL);
-  return INT2NUM(listItem);
+    return INT2NUM(listItem);
   } else if (len == 9) {
-  Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
+    Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
 
-  len = RARRAY_LEN(RARRAY_PTR(args)[6]);
-  cptr = ALLOCA_N(char*, len + 1);
-  for (i = 0; i < len; i++) {
-    Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
-    cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
-  }
-  cptr[len] = NULL;
+    len = RARRAY_LEN(RARRAY_PTR(args)[6]);
+    cptr = ALLOCA_N(char*, len + 1);
+    for (i = 0; i < len; i++) {
+      Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
+      cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
+    }
+    cptr[len] = NULL;
 
-  newtWinMenu(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
+    newtWinMenu(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
         NUM2INT(RARRAY_PTR(args)[2]),
         NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
         NUM2INT(RARRAY_PTR(args)[5]),
         cptr, &listItem, StringValuePtr(RARRAY_PTR(args)[7]), StringValuePtr(RARRAY_PTR(args)[8]), NULL);
-  return INT2NUM(listItem);
+    return INT2NUM(listItem);
   } else {
-  rb_raise(rb_eArgError, "8 or 9 arguments required");
+    rb_raise(rb_eArgError, "8 or 9 arguments required");
   }
 
   return Qnil;
@@ -364,57 +364,57 @@ static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
 
   len = RARRAY_LEN(args);
   if (len == 8) {
-  Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
+    Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
 
-  len = RARRAY_LEN(RARRAY_PTR(args)[6]);
-  if (len > 8) rb_raise(rb_eArgError, "8 or less arguments required");
-  items = ALLOCA_N(struct newtWinEntry, len + 1);
-  for (i = 0; i < len; i++) {
-    Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
-    items[i].text = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
-    items[i].value = entries + i;
-    items[i].flags = 0;
-  }
-  items[len].text = NULL;
-  items[len].value = NULL;
-  items[len].flags = 0;
+    len = RARRAY_LEN(RARRAY_PTR(args)[6]);
+    if (len > 8) rb_raise(rb_eArgError, "8 or less arguments required");
+    items = ALLOCA_N(struct newtWinEntry, len + 1);
+    for (i = 0; i < len; i++) {
+      Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
+      items[i].text = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
+      items[i].value = entries + i;
+      items[i].flags = 0;
+    }
+    items[len].text = NULL;
+    items[len].value = NULL;
+    items[len].flags = 0;
 
-  newtWinEntries(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
-           NUM2INT(RARRAY_PTR(args)[2]),
-           NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
-           NUM2INT(RARRAY_PTR(args)[5]),
-           items, StringValuePtr(RARRAY_PTR(args)[7]), NULL);
-  for (i = 0; i < len; i++) {
-    rb_ary_push(ary, rb_str_new2(entries[i]));
-  }
-  return ary;
+    newtWinEntries(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
+        NUM2INT(RARRAY_PTR(args)[2]),
+        NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
+        NUM2INT(RARRAY_PTR(args)[5]),
+        items, StringValuePtr(RARRAY_PTR(args)[7]), NULL);
+    for (i = 0; i < len; i++) {
+      rb_ary_push(ary, rb_str_new2(entries[i]));
+    }
+    return ary;
   } else if (len == 9) {
-  Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
+    Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
 
-  len = RARRAY_LEN(RARRAY_PTR(args)[6]);
-  if (len > 8) rb_raise(rb_eArgError, "8 or less arguments required");
-  items = ALLOCA_N(struct newtWinEntry, len + 1);
-  for (i = 0; i < len; i++) {
-    Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
-    items[i].text = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
-    items[i].value = entries + i;
-    items[i].flags = 0;
-  }
-  items[len].text = NULL;
-  items[len].value = NULL;
-  items[len].flags = 0;
+    len = RARRAY_LEN(RARRAY_PTR(args)[6]);
+    if (len > 8) rb_raise(rb_eArgError, "8 or less arguments required");
+    items = ALLOCA_N(struct newtWinEntry, len + 1);
+    for (i = 0; i < len; i++) {
+      Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
+      items[i].text = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
+      items[i].value = entries + i;
+      items[i].flags = 0;
+    }
+    items[len].text = NULL;
+    items[len].value = NULL;
+    items[len].flags = 0;
 
-  newtWinEntries(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
-           NUM2INT(RARRAY_PTR(args)[2]),
-           NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
-           NUM2INT(RARRAY_PTR(args)[5]),
-           items, StringValuePtr(RARRAY_PTR(args)[7]), StringValuePtr(RARRAY_PTR(args)[8]), NULL);
-  for (i = 0; i < len; i++) {
-    rb_ary_push(ary, rb_str_new2(entries[i]));
-  }
-  return ary;
+    newtWinEntries(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
+        NUM2INT(RARRAY_PTR(args)[2]),
+        NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
+        NUM2INT(RARRAY_PTR(args)[5]),
+        items, StringValuePtr(RARRAY_PTR(args)[7]), StringValuePtr(RARRAY_PTR(args)[8]), NULL);
+    for (i = 0; i < len; i++) {
+      rb_ary_push(ary, rb_str_new2(entries[i]));
+    }
+    return ary;
   } else {
-  rb_raise(rb_eArgError, "8 or 9 arguments required");
+    rb_raise(rb_eArgError, "8 or 9 arguments required");
   }
 
   return Qnil;
@@ -424,7 +424,7 @@ static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
  * Widget_callback_function
  *
  */
-void
+  void
 rb_ext_Widget_callback_function(newtComponent co, void *proc)
 {
   VALUE widget;
@@ -449,16 +449,16 @@ static VALUE rb_ext_Widget_callback(int argc, VALUE argv[], VALUE self)
 
   Data_Get_Struct(self, struct newtComponent_struct, co);
   switch(rb_scan_args(argc, argv, "01", &arg1)){
-  case 0:
-    value = rb_hash_aref(rb_ext_Widget_CALLBACK_HASH, self);
-    break;
-  case 1:
-    rb_hash_aset(rb_ext_Widget_CALLBACK_HASH, self, arg1);
-    newtComponentAddCallback(co, rb_ext_Widget_callback_function, (void*)arg1);
-    value = Qnil;
-    break;
-  default:
-    rb_bug("rb_ext_Widget_callback");
+    case 0:
+      value = rb_hash_aref(rb_ext_Widget_CALLBACK_HASH, self);
+      break;
+    case 1:
+      rb_hash_aset(rb_ext_Widget_CALLBACK_HASH, self, arg1);
+      newtComponentAddCallback(co, rb_ext_Widget_callback_function, (void*)arg1);
+      value = Qnil;
+      break;
+    default:
+      rb_bug("rb_ext_Widget_callback");
   };
 
   return value;
@@ -536,16 +536,16 @@ static VALUE rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
  *
  */
 static VALUE rb_ext_Checkbox_new(VALUE self, VALUE left, VALUE top, VALUE text,
-          VALUE defValue, VALUE seq)
+    VALUE defValue, VALUE seq)
 {
   newtComponent co;
 
   if (NIL_P(seq)) {
-  co = newtCheckbox(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
-            StringValuePtr(defValue)[0], NULL, NULL);
+    co = newtCheckbox(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
+        StringValuePtr(defValue)[0], NULL, NULL);
   } else {
-  co = newtCheckbox(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
-            StringValuePtr(defValue)[0], StringValuePtr(seq), NULL);
+    co = newtCheckbox(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
+        StringValuePtr(defValue)[0], StringValuePtr(seq), NULL);
   }
   return Data_Wrap_Struct(self, 0, 0, co);
 }
@@ -575,7 +575,7 @@ static VALUE rb_ext_Checkbox_SetValue(VALUE self, VALUE value)
 
   Data_Get_Struct(self, struct newtComponent_struct, co);
   if (RSTRING_LEN(value) > 0) {
-  newtCheckboxSetValue(co, StringValuePtr(value)[0]);
+    newtCheckboxSetValue(co, StringValuePtr(value)[0]);
   }
   return Qnil;
 }
@@ -591,13 +591,13 @@ static VALUE rb_ext_Checkbox_SetFlags(VALUE self, VALUE args)
 
   len = RARRAY_LEN(args);
   if (len == 1) {
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  newtCheckboxSetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NEWT_FLAGS_SET);
+    Data_Get_Struct(self, struct newtComponent_struct, co);
+    newtCheckboxSetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NEWT_FLAGS_SET);
   } else if (len == 2) {
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  newtCheckboxSetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NUM2INT(RARRAY_PTR(args)[1]));
+    Data_Get_Struct(self, struct newtComponent_struct, co);
+    newtCheckboxSetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NUM2INT(RARRAY_PTR(args)[1]));
   } else {
-  rb_raise(rb_eArgError, "1 argument or 2 arguments required");
+    rb_raise(rb_eArgError, "1 argument or 2 arguments required");
   }
 
   return Qnil;
@@ -608,17 +608,17 @@ static VALUE rb_ext_Checkbox_SetFlags(VALUE self, VALUE args)
  *
  */
 static VALUE rb_ext_RadioButton_new(VALUE self, VALUE left, VALUE top, VALUE text,
-             VALUE isDefault, VALUE prevButton)
+    VALUE isDefault, VALUE prevButton)
 {
   newtComponent co, cco;
 
   if (NIL_P(prevButton)) {
-  co = newtRadiobutton(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
-             NUM2INT(isDefault), NULL);
+    co = newtRadiobutton(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
+        NUM2INT(isDefault), NULL);
   } else {
-  Data_Get_Struct(prevButton, struct newtComponent_struct, cco);
-  co = newtRadiobutton(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
-             NUM2INT(isDefault), cco);
+    Data_Get_Struct(prevButton, struct newtComponent_struct, cco);
+    co = newtRadiobutton(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
+        NUM2INT(isDefault), cco);
   }
   return Data_Wrap_Struct(self, 0, 0, co);
 }
@@ -679,15 +679,15 @@ static VALUE rb_ext_Listbox_SetCurrentByKey(VALUE self, VALUE key)
   Data_Get_Struct(self, struct newtComponent_struct, co);
 
   switch(TYPE(key)) {
-  case T_STRING:
-  newtListboxSetCurrentByKey(co, (void *)StringValuePtr(key));
-  break;
-  case T_FIXNUM:
-  newtListboxSetCurrentByKey(co, (void *)NUM2INT(key));
-  break;
-  default:
-  rb_raise(rb_eTypeError, "String or Fixnum expected");
-  break;
+    case T_STRING:
+      newtListboxSetCurrentByKey(co, (void *)StringValuePtr(key));
+      break;
+    case T_FIXNUM:
+      newtListboxSetCurrentByKey(co, (void *)NUM2INT(key));
+      break;
+    default:
+      rb_raise(rb_eTypeError, "String or Fixnum expected");
+      break;
   }
   return Qnil;
 }
@@ -729,15 +729,15 @@ static VALUE rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
   Data_Get_Struct(self, struct newtComponent_struct, co);
 
   switch(TYPE(data)) {
-  case T_STRING:
-  newtListboxSetData(co, NUM2INT(num), (void *)StringValuePtr(data));
-  break;
-  case T_FIXNUM:
-  newtListboxSetData(co, NUM2INT(num), (void *)NUM2INT(data));
-  break;
-  default:
-  rb_raise(rb_eTypeError, "String or Fixnum expected");
-  break;
+    case T_STRING:
+      newtListboxSetData(co, NUM2INT(num), (void *)StringValuePtr(data));
+      break;
+    case T_FIXNUM:
+      newtListboxSetData(co, NUM2INT(num), (void *)NUM2INT(data));
+      break;
+    default:
+      rb_raise(rb_eTypeError, "String or Fixnum expected");
+      break;
   }
   return Qnil;
 }
@@ -753,15 +753,15 @@ static VALUE rb_ext_Listbox_AppendEntry(VALUE self, VALUE text, VALUE data)
   Data_Get_Struct(self, struct newtComponent_struct, co);
 
   switch(TYPE(data)) {
-  case T_STRING:
-  newtListboxAppendEntry(co, StringValuePtr(text), (void *)StringValuePtr(data));
-  break;
-  case T_FIXNUM:
-  newtListboxAppendEntry(co, StringValuePtr(text), (void *)NUM2INT(data));
-  break;
-  default:
-  rb_raise(rb_eTypeError, "String or Fixnum expected");
-  break;
+    case T_STRING:
+      newtListboxAppendEntry(co, StringValuePtr(text), (void *)StringValuePtr(data));
+      break;
+    case T_FIXNUM:
+      newtListboxAppendEntry(co, StringValuePtr(text), (void *)NUM2INT(data));
+      break;
+    default:
+      rb_raise(rb_eTypeError, "String or Fixnum expected");
+      break;
   }
   return Qnil;
 }
@@ -777,34 +777,34 @@ static VALUE rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALU
   Data_Get_Struct(self, struct newtComponent_struct, co);
 
   switch(TYPE(data)) {
-  case T_STRING:
-  switch(TYPE(key)) {
-  case T_STRING:
-    newtListboxInsertEntry(co, StringValuePtr(text), (void *)StringValuePtr(data), (void *)StringValuePtr(key));
-    break;
-  case T_FIXNUM:
-    newtListboxInsertEntry(co, StringValuePtr(text), (void *)StringValuePtr(data), (void *)NUM2INT(key));
-    break;
-  default:
-    rb_raise(rb_eTypeError, "String or Fixnum expected");
-    break;
-  }
-  case T_FIXNUM:
-  switch(TYPE(key)) {
-  case T_STRING:
-    newtListboxInsertEntry(co, StringValuePtr(text), (void *)NUM2INT(data), (void *)StringValuePtr(key));
-    break;
-  case T_FIXNUM:
-    newtListboxInsertEntry(co, StringValuePtr(text), (void *)NUM2INT(data), (void *)NUM2INT(key));
-    break;
-  default:
-    rb_raise(rb_eTypeError, "String or Fixnum expected");
-    break;
-  }
-  break;
-  default:
-  rb_raise(rb_eTypeError, "String or Fixnum expected");
-  break;
+    case T_STRING:
+      switch(TYPE(key)) {
+        case T_STRING:
+          newtListboxInsertEntry(co, StringValuePtr(text), (void *)StringValuePtr(data), (void *)StringValuePtr(key));
+          break;
+        case T_FIXNUM:
+          newtListboxInsertEntry(co, StringValuePtr(text), (void *)StringValuePtr(data), (void *)NUM2INT(key));
+          break;
+        default:
+          rb_raise(rb_eTypeError, "String or Fixnum expected");
+          break;
+      }
+    case T_FIXNUM:
+      switch(TYPE(key)) {
+        case T_STRING:
+          newtListboxInsertEntry(co, StringValuePtr(text), (void *)NUM2INT(data), (void *)StringValuePtr(key));
+          break;
+        case T_FIXNUM:
+          newtListboxInsertEntry(co, StringValuePtr(text), (void *)NUM2INT(data), (void *)NUM2INT(key));
+          break;
+        default:
+          rb_raise(rb_eTypeError, "String or Fixnum expected");
+          break;
+      }
+      break;
+    default:
+      rb_raise(rb_eTypeError, "String or Fixnum expected");
+      break;
   }
   return Qnil;
 }
@@ -820,15 +820,15 @@ static VALUE rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
   Data_Get_Struct(self, struct newtComponent_struct, co);
 
   switch(TYPE(data)) {
-  case T_STRING:
-  newtListboxDeleteEntry(co, (void *)StringValuePtr(data));
-  break;
-  case T_FIXNUM:
-  newtListboxDeleteEntry(co, (void *)NUM2INT(data));
-  break;
-  default:
-  rb_raise(rb_eTypeError, "String or Fixnum expected");
-  break;
+    case T_STRING:
+      newtListboxDeleteEntry(co, (void *)StringValuePtr(data));
+      break;
+    case T_FIXNUM:
+      newtListboxDeleteEntry(co, (void *)NUM2INT(data));
+      break;
+    default:
+      rb_raise(rb_eTypeError, "String or Fixnum expected");
+      break;
   }
   return Qnil;
 }
@@ -872,15 +872,15 @@ static VALUE rb_ext_Listbox_SelectItem(VALUE self, VALUE key, VALUE sense)
   Data_Get_Struct(self, struct newtComponent_struct, co);
 
   switch(TYPE(key)) {
-  case T_STRING:
-  newtListboxSelectItem(co, (void *)StringValuePtr(key), NUM2INT(sense));
-  break;
-  case T_FIXNUM:
-  newtListboxSelectItem(co, (void *)NUM2INT(key), NUM2INT(sense));
-  break;
-  default:
-  rb_raise(rb_eTypeError, "String or Fixnum expected");
-  break;
+    case T_STRING:
+      newtListboxSelectItem(co, (void *)StringValuePtr(key), NUM2INT(sense));
+      break;
+    case T_FIXNUM:
+      newtListboxSelectItem(co, (void *)NUM2INT(key), NUM2INT(sense));
+      break;
+    default:
+      rb_raise(rb_eTypeError, "String or Fixnum expected");
+      break;
   }
   return Qnil;
 }
@@ -902,8 +902,8 @@ static VALUE rb_ext_CheckboxTree_new(VALUE self, VALUE left, VALUE top, VALUE he
  *
  */
 static VALUE rb_ext_CheckboxTree_AddItem(VALUE self, VALUE args)
-/*rb_ext_CheckboxTree_AddItem(VALUE self, VALUE text, VALUE data, VALUE flags)*/
-   /*, VALUE index)*/
+  /*rb_ext_CheckboxTree_AddItem(VALUE self, VALUE text, VALUE data, VALUE flags)*/
+  /*, VALUE index)*/
 {
   newtComponent co;
 #if 1
@@ -912,44 +912,44 @@ static VALUE rb_ext_CheckboxTree_AddItem(VALUE self, VALUE args)
 
   len = RARRAY_LEN(args);
   if (len < 4) {
-  rb_raise(rb_eArgError, "4 arguments required");
+    rb_raise(rb_eArgError, "4 arguments required");
   } else {
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+    Data_Get_Struct(self, struct newtComponent_struct, co);
 
-  indexes = ALLOCA_N(int, (len - 4) + 2);
-  for (i = 0; i < (len - 4) + 1; i++) {
-    indexes[i] = NUM2INT(RARRAY_PTR(args)[i+3]);
-  }
-  indexes[(len - 4) + 1] = NEWT_ARG_LAST;
+    indexes = ALLOCA_N(int, (len - 4) + 2);
+    for (i = 0; i < (len - 4) + 1; i++) {
+      indexes[i] = NUM2INT(RARRAY_PTR(args)[i+3]);
+    }
+    indexes[(len - 4) + 1] = NEWT_ARG_LAST;
 
-  switch(TYPE(RARRAY_PTR(args)[1])) {
-  case T_STRING:
-    newtCheckboxTreeAddArray(co, StringValuePtr(RARRAY_PTR(args)[0]), (void *)StringValuePtr(RARRAY_PTR(args)[1]),
-                 NUM2INT(RARRAY_PTR(args)[2]), indexes);
-    break;
-  case T_FIXNUM:
-    newtCheckboxTreeAddArray(co, StringValuePtr(RARRAY_PTR(args)[0]), (void *)NUM2INT(RARRAY_PTR(args)[1]),
-                 NUM2INT(RARRAY_PTR(args)[2]), indexes);
-    break;
-  default:
-    rb_raise(rb_eTypeError, "String or Fixnum expected");
-    break;
-  }
-  return Qnil;
+    switch(TYPE(RARRAY_PTR(args)[1])) {
+      case T_STRING:
+        newtCheckboxTreeAddArray(co, StringValuePtr(RARRAY_PTR(args)[0]), (void *)StringValuePtr(RARRAY_PTR(args)[1]),
+            NUM2INT(RARRAY_PTR(args)[2]), indexes);
+        break;
+      case T_FIXNUM:
+        newtCheckboxTreeAddArray(co, StringValuePtr(RARRAY_PTR(args)[0]), (void *)NUM2INT(RARRAY_PTR(args)[1]),
+            NUM2INT(RARRAY_PTR(args)[2]), indexes);
+        break;
+      default:
+        rb_raise(rb_eTypeError, "String or Fixnum expected");
+        break;
+    }
+    return Qnil;
   }
 #else
   Data_Get_Struct(self, struct newtComponent_struct, co);
 
   switch(TYPE(data)) {
-  case T_STRING:
-  newtCheckboxTreeAddItem(co, StringValuePtr(text), (void *)StringValuePtr(data), NUM2INT(flags), NEWT_ARG_APPEND, NEWT_ARG_LAST);
-  break;
-  case T_FIXNUM:
-  newtCheckboxTreeAddItem(co, StringValuePtr(text), (void *)NUM2INT(data), NUM2INT(flags), NEWT_ARG_APPEND, NEWT_ARG_LAST);
-  break;
-  default:
-  rb_raise(rb_eTypeError, "String or Fixnum expected");
-  break;
+    case T_STRING:
+      newtCheckboxTreeAddItem(co, StringValuePtr(text), (void *)StringValuePtr(data), NUM2INT(flags), NEWT_ARG_APPEND, NEWT_ARG_LAST);
+      break;
+    case T_FIXNUM:
+      newtCheckboxTreeAddItem(co, StringValuePtr(text), (void *)NUM2INT(data), NUM2INT(flags), NEWT_ARG_APPEND, NEWT_ARG_LAST);
+      break;
+    default:
+      rb_raise(rb_eTypeError, "String or Fixnum expected");
+      break;
   }
   return Qnil;
 #endif
@@ -964,9 +964,9 @@ static VALUE rb_ext_CheckboxTreeMulti_new(VALUE self, VALUE left, VALUE top, VAL
   newtComponent co;
 
   if (NIL_P(seq)) {
-  co = newtCheckboxTreeMulti(NUM2INT(left), NUM2INT(top), NUM2INT(height), NULL, NUM2INT(flags));
+    co = newtCheckboxTreeMulti(NUM2INT(left), NUM2INT(top), NUM2INT(height), NULL, NUM2INT(flags));
   } else {
-  co = newtCheckboxTreeMulti(NUM2INT(left), NUM2INT(top), NUM2INT(height), StringValuePtr(seq), NUM2INT(flags));
+    co = newtCheckboxTreeMulti(NUM2INT(left), NUM2INT(top), NUM2INT(height), StringValuePtr(seq), NUM2INT(flags));
   }
   return Data_Wrap_Struct(self, 0, 0, co);
 }
@@ -1030,7 +1030,7 @@ static VALUE rb_ext_TextboxReflowed_new(VALUE self, VALUE left, VALUE top, VALUE
   newtComponent co;
 
   co = newtTextboxReflowed(NUM2INT(left), NUM2INT(top), StringValuePtr(text), NUM2INT(width),
-               NUM2INT(flexDown), NUM2INT(flexUp), NUM2INT(flags));
+      NUM2INT(flexDown), NUM2INT(flexUp), NUM2INT(flags));
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
@@ -1038,14 +1038,14 @@ static VALUE rb_ext_TextboxReflowed_new(VALUE self, VALUE left, VALUE top, VALUE
  * Form_Destroy
  *
  */
-static void
+  static void
 rb_ext_Form_Destroy(VALUE self)
 {
   newtComponent form;
 
   if (self) {
-  Data_Get_Struct(cForm, struct newtComponent_struct, form);
-  newtFormDestroy(form);
+    Data_Get_Struct(cForm, struct newtComponent_struct, form);
+    newtFormDestroy(form);
   }
 }
 
@@ -1098,8 +1098,8 @@ static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE co)
   Data_Get_Struct(self, struct newtComponent_struct, form);
 
   for (i = 0; i < RARRAY_LEN(co); i++) {
-  Data_Get_Struct(RARRAY_PTR(co)[i], struct newtComponent_struct, cco);
-  newtFormAddComponent(form, cco);
+    Data_Get_Struct(RARRAY_PTR(co)[i], struct newtComponent_struct, cco);
+    newtFormAddComponent(form, cco);
   }
   return Qnil;
 }
@@ -1178,7 +1178,7 @@ static VALUE rb_ext_Entry_new(VALUE self, VALUE left, VALUE top, VALUE initialVa
   newtComponent co;
 
   co = newtEntry(NUM2INT(left), NUM2INT(top), StringValuePtr(initialValue), NUM2INT(width),
-         NULL, NUM2INT(flags));
+      NULL, NUM2INT(flags));
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
@@ -1192,18 +1192,18 @@ static VALUE rb_ext_Entry_Set(VALUE self, VALUE value, VALUE cursorAtEnd)
 
   Data_Get_Struct(self, struct newtComponent_struct, co);
   switch(TYPE(cursorAtEnd)) {
-  case T_TRUE:
-  newtEntrySet(co, StringValuePtr(value), 1);
-  break;
-  case T_FALSE:
-  newtEntrySet(co, StringValuePtr(value), 0);
-  break;
-  case T_FIXNUM:
-  newtEntrySet(co, StringValuePtr(value), NUM2INT(cursorAtEnd));
-  break;
-  default:
-  rb_raise(rb_eTypeError, "Boolean or Fixnum expected");
-  break;
+    case T_TRUE:
+      newtEntrySet(co, StringValuePtr(value), 1);
+      break;
+    case T_FALSE:
+      newtEntrySet(co, StringValuePtr(value), 0);
+      break;
+    case T_FIXNUM:
+      newtEntrySet(co, StringValuePtr(value), NUM2INT(cursorAtEnd));
+      break;
+    default:
+      rb_raise(rb_eTypeError, "Boolean or Fixnum expected");
+      break;
   }
 
   return Qnil;
@@ -1232,13 +1232,13 @@ static VALUE rb_ext_Entry_SetFlags(VALUE self, VALUE args)
 
   len = RARRAY_LEN(args);
   if (len == 1) {
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  newtEntrySetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NEWT_FLAGS_SET);
+    Data_Get_Struct(self, struct newtComponent_struct, co);
+    newtEntrySetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NEWT_FLAGS_SET);
   } else if (len == 2) {
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  newtEntrySetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NUM2INT(RARRAY_PTR(args)[1]));
+    Data_Get_Struct(self, struct newtComponent_struct, co);
+    newtEntrySetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NUM2INT(RARRAY_PTR(args)[1]));
   } else {
-  rb_raise(rb_eArgError, "1 argument or 2 arguments required");
+    rb_raise(rb_eArgError, "1 argument or 2 arguments required");
   }
   return Qnil;
 }
@@ -1272,14 +1272,14 @@ static VALUE rb_ext_Scale_Set(VALUE self, VALUE amount)
  * Grid_free
  *
  */
-static void
+  static void
 rb_ext_Grid_free(VALUE self)
 {
   newtGrid grid;
 
   if (self) {
-  Data_Get_Struct(cGrid, struct grid_s, grid);
-  newtGridFree(grid, 1);
+    Data_Get_Struct(cGrid, struct grid_s, grid);
+    newtGridFree(grid, 1);
   }
 }
 
@@ -1301,8 +1301,8 @@ static VALUE rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
  *
  */
 static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, VALUE val,
-           VALUE padLeft, VALUE padTop, VALUE padRight, VALUE padBottom,
-           VALUE anchor, VALUE flags)
+    VALUE padLeft, VALUE padTop, VALUE padRight, VALUE padBottom,
+    VALUE anchor, VALUE flags)
 {
   newtGrid grid;
   newtComponent co;
@@ -1310,8 +1310,8 @@ static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, 
   Data_Get_Struct(self, struct grid_s, grid);
   Data_Get_Struct(val, struct newtComponent_struct, co);
   newtGridSetField(grid, NUM2INT(col), NUM2INT(row), NUM2INT(type), co,
-           NUM2INT(padLeft), NUM2INT(padTop), NUM2INT(padRight), NUM2INT(padBottom),
-           NUM2INT(anchor), NUM2INT(flags));
+      NUM2INT(padLeft), NUM2INT(padTop), NUM2INT(padRight), NUM2INT(padBottom),
+      NUM2INT(anchor), NUM2INT(flags));
   return Qnil;
 }
 
@@ -1326,14 +1326,14 @@ static VALUE rb_ext_Grid_WrappedWindow(VALUE self, VALUE args)
 
   len = RARRAY_LEN(args);
   if (len == 1) {
-  Data_Get_Struct(self, struct grid_s, grid);
-  newtGridWrappedWindow(grid, StringValuePtr(RARRAY_PTR(args)[0]));
+    Data_Get_Struct(self, struct grid_s, grid);
+    newtGridWrappedWindow(grid, StringValuePtr(RARRAY_PTR(args)[0]));
   } else if (len == 3) {
-  Data_Get_Struct(self, struct grid_s, grid);
-  newtGridWrappedWindowAt(grid, StringValuePtr(RARRAY_PTR(args)[0]),
-              NUM2INT(StringValuePtr(RARRAY_PTR(args)[1])), NUM2INT(StringValuePtr(RARRAY_PTR(args)[2])));
+    Data_Get_Struct(self, struct grid_s, grid);
+    newtGridWrappedWindowAt(grid, StringValuePtr(RARRAY_PTR(args)[0]),
+        NUM2INT(StringValuePtr(RARRAY_PTR(args)[1])), NUM2INT(StringValuePtr(RARRAY_PTR(args)[2])));
   } else {
-  rb_raise(rb_eArgError, "1 argument or 3 arguments required");
+    rb_raise(rb_eArgError, "1 argument or 3 arguments required");
   }
 
   return Qnil;
