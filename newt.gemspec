@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.authors = ["Noritsugu Nakamura", "Eric Sperano", "Lukas Zapletal"]
   s.summary = "Ruby bindings for newt"
   s.description = "Ruby bindings for newt TUI library"
-  s.homepage = "https://github.com/ericsperano/ruby-newt"
+  s.homepage = "https://github.com/theforeman/ruby-newt"
   s.licenses = ["MIT"]
   s.email = "foreman-dev@googlegroups.com"
 

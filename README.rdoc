@@ -1,21 +1,36 @@
 = newt rubygem
 
-* http://github.com/ericsperano/ruby-newt
+* http://github.com/theforeman/ruby-newt
 
-== DESCRIPTION:
+== DESCRIPTION
 
 Ruby bindings for the newt library
-
-== FEATURES/PROBLEMS:
 
 Code is originally from Noritsugu Nakamura and is available at:
 http://www2s.biglobe.ne.jp/~Nori/ruby/dist/ruby-newt-20020105.tar.gz
 
-== SYNOPSIS:
+It was maintained by Eric Sperano and moved to theforeman github page in 2015.
 
-See http://github.com/ericsperano/ruby-newt/tree/master/examples for usage examples.
+See http://github.com/theforeman/ruby-newt/tree/master/examples for usage examples.
 
-== REQUIREMENTS:
+== INSTALL
+
+=== From rubygems.org
+
+  $ gem install newt
+
+=== From source
+
+  $ git clone git://github.com/theforeman/ruby-newt
+  $ cd ruby-newt
+  $ gem build newt.gemspec
+  $ sudo gem install newt-*.gem
+
+=== Development
+
+  $ rake compile
+
+== REQUIREMENTS
 
 The Newt library and headers.
 
@@ -40,24 +55,14 @@ For some reason, it does not always find the header so symlink it:
 
   $ sudo ln -s /opt/local/include/newt.h  /usr/include/
 
-== INSTALL:
+== AUTHORS
 
-=== From rubygems.org
+* Noritsugu Nakamura
+* Eric Sperano
+* Kosuke Asami
+* Lukas Zapletal
 
-  $ gem install newt
-
-=== From source
-
-  $ git clone git://github.com/ericsperano/ruby-newt
-  $ cd ruby-newt
-  $ gem build newt.gemspec
-  $ sudo gem install newt-*.gem
-
-=== Development
-
-  $ rake compile
-
-== LICENSE:
+== LICENSE
 
 (The MIT License)
 
