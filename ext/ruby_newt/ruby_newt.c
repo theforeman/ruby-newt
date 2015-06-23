@@ -47,8 +47,7 @@ struct snackWidget_s {
  * ReflowText
  *
  */
-static VALUE
-rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp)
+static VALUE rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp)
 {
   int actualWidth, actualHeight;
   char *p;
@@ -67,8 +66,7 @@ rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDown, VALUE fle
  * Screen_new
  *
  */
-static VALUE
-rb_ext_Screen_new()
+static VALUE rb_ext_Screen_new()
 {
   newtInit();
   newtCls();
@@ -80,8 +78,7 @@ rb_ext_Screen_new()
  * Screen_Init
  *
  */
-static VALUE
-rb_ext_Screen_Init()
+static VALUE rb_ext_Screen_Init()
 {
   newtInit();
   return Qnil;
@@ -91,8 +88,7 @@ rb_ext_Screen_Init()
  * Screen_Cls
  *
  */
-static VALUE
-rb_ext_Screen_Cls()
+static VALUE rb_ext_Screen_Cls()
 {
   newtCls();
   return Qnil;
@@ -102,8 +98,7 @@ rb_ext_Screen_Cls()
  * Screen_Finished
  *
  */
-static VALUE
-rb_ext_Screen_Finished()
+static VALUE rb_ext_Screen_Finished()
 {
   newtFinished();
 
@@ -114,8 +109,7 @@ rb_ext_Screen_Finished()
  * Screen_WaitForKey
  *
  */
-static VALUE
-rb_ext_Screen_WaitForKey()
+static VALUE rb_ext_Screen_WaitForKey()
 {
   newtWaitForKey();
 
@@ -126,8 +120,7 @@ rb_ext_Screen_WaitForKey()
  * Screen_ClearKeyBuffer
  *
  */
-static VALUE
-rb_ext_Screen_ClearKeyBuffer()
+static VALUE rb_ext_Screen_ClearKeyBuffer()
 {
   newtClearKeyBuffer();
 
@@ -138,8 +131,7 @@ rb_ext_Screen_ClearKeyBuffer()
  * Screen_OpenWindow
  *
  */
-static VALUE
-rb_ext_Screen_OpenWindow(VALUE self, VALUE left, VALUE top,
+static VALUE rb_ext_Screen_OpenWindow(VALUE self, VALUE left, VALUE top,
              VALUE width, VALUE height, VALUE title)
 {
   return INT2NUM(newtOpenWindow(NUM2INT(left), NUM2INT(top),
@@ -150,8 +142,7 @@ rb_ext_Screen_OpenWindow(VALUE self, VALUE left, VALUE top,
  * Screen_CenteredWindow
  *
  */
-static VALUE
-rb_ext_Screen_CenteredWindow(VALUE self, VALUE width, VALUE height, VALUE title)
+static VALUE rb_ext_Screen_CenteredWindow(VALUE self, VALUE width, VALUE height, VALUE title)
 {
   return INT2NUM(newtCenteredWindow(NUM2INT(width), NUM2INT(height), StringValuePtr(title)));
 }
@@ -160,8 +151,7 @@ rb_ext_Screen_CenteredWindow(VALUE self, VALUE width, VALUE height, VALUE title)
  * Screen_PopWindow
  *
  */
-static VALUE
-rb_ext_Screen_PopWindow(VALUE self)
+static VALUE rb_ext_Screen_PopWindow(VALUE self)
 {
   newtPopWindow();
   return Qnil;
@@ -172,8 +162,7 @@ rb_ext_Screen_PopWindow(VALUE self)
  * Screen_Resume
  *
  */
-static VALUE
-rb_ext_Screen_Resume()
+static VALUE rb_ext_Screen_Resume()
 {
   newtResume();
 
@@ -184,8 +173,7 @@ rb_ext_Screen_Resume()
  * Screen_Suspend
  *
  */
-static VALUE
-rb_ext_Screen_Suspend()
+static VALUE rb_ext_Screen_Suspend()
 {
   newtSuspend();
 
@@ -196,8 +184,7 @@ rb_ext_Screen_Suspend()
  * Screen_Refresh
  *
  */
-static VALUE
-rb_ext_Screen_Refresh()
+static VALUE rb_ext_Screen_Refresh()
 {
   newtRefresh();
 
@@ -208,8 +195,7 @@ rb_ext_Screen_Refresh()
  * Screen_DrawRootText
  *
  */
-static VALUE
-rb_ext_Screen_DrawRootText(VALUE self, VALUE col, VALUE row, VALUE text)
+static VALUE rb_ext_Screen_DrawRootText(VALUE self, VALUE col, VALUE row, VALUE text)
 {
 
   newtDrawRootText(NUM2INT(col), NUM2INT(row), StringValuePtr(text));
@@ -220,8 +206,7 @@ rb_ext_Screen_DrawRootText(VALUE self, VALUE col, VALUE row, VALUE text)
  * Screen_PushHelpLine
  *
  */
-static VALUE
-rb_ext_Screen_PushHelpLine(VALUE self, VALUE text)
+static VALUE rb_ext_Screen_PushHelpLine(VALUE self, VALUE text)
 {
   newtPushHelpLine(StringValuePtr(text));
 
@@ -232,8 +217,7 @@ rb_ext_Screen_PushHelpLine(VALUE self, VALUE text)
  * Screen_RedrawHelpLine
  *
  */
-static VALUE
-rb_ext_Screen_RedrawHelpLine(VALUE self)
+static VALUE rb_ext_Screen_RedrawHelpLine(VALUE self)
 {
   newtRedrawHelpLine();
 
@@ -244,8 +228,7 @@ rb_ext_Screen_RedrawHelpLine(VALUE self)
  * Screen_PopHelpLine
  *
  */
-static VALUE
-rb_ext_Screen_PopHelpLine(VALUE self)
+static VALUE rb_ext_Screen_PopHelpLine(VALUE self)
 {
   newtPopHelpLine();
 
@@ -256,8 +239,7 @@ rb_ext_Screen_PopHelpLine(VALUE self)
  * Screen_Bell
  *
  */
-static VALUE
-rb_ext_Screen_Bell(VALUE self)
+static VALUE rb_ext_Screen_Bell(VALUE self)
 {
   newtBell();
 
@@ -268,8 +250,7 @@ rb_ext_Screen_Bell(VALUE self)
  * Screen_Size
  *
  */
-static VALUE
-rb_ext_Screen_Size(VALUE self)
+static VALUE rb_ext_Screen_Size(VALUE self)
 {
   int cols, rows;
   VALUE ary = rb_ary_new2(2);
@@ -285,8 +266,7 @@ rb_ext_Screen_Size(VALUE self)
  * Screen_WinMessage
  *
  */
-static VALUE
-rb_ext_Screen_WinMessage(VALUE self, VALUE args)
+static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE args)
 {
   if (RARRAY_LEN(args) < 3) {
   rb_raise(rb_eArgError, "3 arguments required");
@@ -302,8 +282,7 @@ rb_ext_Screen_WinMessage(VALUE self, VALUE args)
  * Screen_WinChoice
  *
  */
-static VALUE
-rb_ext_Screen_WinChoice(VALUE self, VALUE args)
+static VALUE rb_ext_Screen_WinChoice(VALUE self, VALUE args)
 {
   if (RARRAY_LEN(args) < 4) {
   rb_raise(rb_eArgError, "4 arguments required");
@@ -320,8 +299,7 @@ rb_ext_Screen_WinChoice(VALUE self, VALUE args)
  * Screen_WinMenu
  *
  */
-static VALUE
-rb_ext_Screen_WinMenu(VALUE self, VALUE args)
+static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
 {
   long len;
   int i, listItem;
@@ -373,8 +351,7 @@ rb_ext_Screen_WinMenu(VALUE self, VALUE args)
  * Screen_WinEntries
  *
  */
-static VALUE
-rb_ext_Screen_WinEntries(VALUE self, VALUE args)
+static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
 {
   long len;
   int i;
@@ -465,8 +442,7 @@ rb_ext_Widget_callback_function(newtComponent co, void *proc)
  * Widget_callback
  *
  */
-static VALUE
-rb_ext_Widget_callback(int argc, VALUE argv[], VALUE self)
+static VALUE rb_ext_Widget_callback(int argc, VALUE argv[], VALUE self)
 {
   newtComponent co;
   VALUE arg1, value;
@@ -492,8 +468,7 @@ rb_ext_Widget_callback(int argc, VALUE argv[], VALUE self)
  * Widget_equal
  *
  */
-static VALUE
-rb_ext_Widget_equal(VALUE self, VALUE widget)
+static VALUE rb_ext_Widget_equal(VALUE self, VALUE widget)
 {
   newtComponent co, co2;
 
@@ -511,8 +486,7 @@ rb_ext_Widget_equal(VALUE self, VALUE widget)
  * Label_new
  *
  */
-static VALUE
-rb_ext_Label_new(VALUE self, VALUE left, VALUE top, VALUE text)
+static VALUE rb_ext_Label_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
 
@@ -524,8 +498,7 @@ rb_ext_Label_new(VALUE self, VALUE left, VALUE top, VALUE text)
  * Label_SetText
  *
  */
-static VALUE
-rb_ext_Label_SetText(VALUE self, VALUE text)
+static VALUE rb_ext_Label_SetText(VALUE self, VALUE text)
 {
   newtComponent co;
 
@@ -538,8 +511,7 @@ rb_ext_Label_SetText(VALUE self, VALUE text)
  * CompactButton_new
  *
  */
-static VALUE
-rb_ext_CompactButton_new(VALUE self, VALUE left, VALUE top, VALUE text)
+static VALUE rb_ext_CompactButton_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
 
@@ -551,8 +523,7 @@ rb_ext_CompactButton_new(VALUE self, VALUE left, VALUE top, VALUE text)
  * Button_new
  *
  */
-static VALUE
-rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
+static VALUE rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
 
@@ -564,8 +535,7 @@ rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
  * Checkbox_new
  *
  */
-static VALUE
-rb_ext_Checkbox_new(VALUE self, VALUE left, VALUE top, VALUE text,
+static VALUE rb_ext_Checkbox_new(VALUE self, VALUE left, VALUE top, VALUE text,
           VALUE defValue, VALUE seq)
 {
   newtComponent co;
@@ -584,8 +554,7 @@ rb_ext_Checkbox_new(VALUE self, VALUE left, VALUE top, VALUE text,
  * Checkbox_GetValue
  *
  */
-static VALUE
-rb_ext_Checkbox_GetValue(VALUE self)
+static VALUE rb_ext_Checkbox_GetValue(VALUE self)
 {
   newtComponent co;
   char value[10];
@@ -600,8 +569,7 @@ rb_ext_Checkbox_GetValue(VALUE self)
  * Checkbox_SetValue
  *
  */
-static VALUE
-rb_ext_Checkbox_SetValue(VALUE self, VALUE value)
+static VALUE rb_ext_Checkbox_SetValue(VALUE self, VALUE value)
 {
   newtComponent co;
 
@@ -616,8 +584,7 @@ rb_ext_Checkbox_SetValue(VALUE self, VALUE value)
  * Checkbox_SetFlags
  *
  */
-static VALUE
-rb_ext_Checkbox_SetFlags(VALUE self, VALUE args)
+static VALUE rb_ext_Checkbox_SetFlags(VALUE self, VALUE args)
 {
   newtComponent co;
   long len;
@@ -640,8 +607,7 @@ rb_ext_Checkbox_SetFlags(VALUE self, VALUE args)
  * RadioButton_new
  *
  */
-static VALUE
-rb_ext_RadioButton_new(VALUE self, VALUE left, VALUE top, VALUE text,
+static VALUE rb_ext_RadioButton_new(VALUE self, VALUE left, VALUE top, VALUE text,
              VALUE isDefault, VALUE prevButton)
 {
   newtComponent co, cco;
@@ -661,8 +627,7 @@ rb_ext_RadioButton_new(VALUE self, VALUE left, VALUE top, VALUE text,
  * Listbox_new
  *
  */
-static VALUE
-rb_ext_Listbox_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
+static VALUE rb_ext_Listbox_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
 {
   newtComponent co;
 
@@ -674,8 +639,7 @@ rb_ext_Listbox_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
  * Listbox_GetCurrent
  *
  */
-static VALUE
-rb_ext_Listbox_GetCurrent(VALUE self)
+static VALUE rb_ext_Listbox_GetCurrent(VALUE self)
 {
   newtComponent co;
   int i = 0;
@@ -695,8 +659,7 @@ rb_ext_Listbox_GetCurrent(VALUE self)
  * Listbox_SetCurrent
  *
  */
-static VALUE
-rb_ext_Listbox_SetCurrent(VALUE self, VALUE num)
+static VALUE rb_ext_Listbox_SetCurrent(VALUE self, VALUE num)
 {
   newtComponent co;
 
@@ -709,8 +672,7 @@ rb_ext_Listbox_SetCurrent(VALUE self, VALUE num)
  * Listbox_SetCurrentByKey
  *
  */
-static VALUE
-rb_ext_Listbox_SetCurrentByKey(VALUE self, VALUE key)
+static VALUE rb_ext_Listbox_SetCurrentByKey(VALUE self, VALUE key)
 {
   newtComponent co;
 
@@ -734,8 +696,7 @@ rb_ext_Listbox_SetCurrentByKey(VALUE self, VALUE key)
  * Listbox_SetEntry
  *
  */
-static VALUE
-rb_ext_Listbox_SetEntry(VALUE self, VALUE num, VALUE text)
+static VALUE rb_ext_Listbox_SetEntry(VALUE self, VALUE num, VALUE text)
 {
   newtComponent co;
 
@@ -748,8 +709,7 @@ rb_ext_Listbox_SetEntry(VALUE self, VALUE num, VALUE text)
  * Listbox_SetWidth
  *
  */
-static VALUE
-rb_ext_Listbox_SetWidth(VALUE self, VALUE width)
+static VALUE rb_ext_Listbox_SetWidth(VALUE self, VALUE width)
 {
   newtComponent co;
 
@@ -762,8 +722,7 @@ rb_ext_Listbox_SetWidth(VALUE self, VALUE width)
  * Listbox_SetData
  *
  */
-static VALUE
-rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
+static VALUE rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
 {
   newtComponent co;
 
@@ -787,8 +746,7 @@ rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
  * Listbox_AppendEntry
  *
  */
-static VALUE
-rb_ext_Listbox_AppendEntry(VALUE self, VALUE text, VALUE data)
+static VALUE rb_ext_Listbox_AppendEntry(VALUE self, VALUE text, VALUE data)
 {
   newtComponent co;
 
@@ -812,8 +770,7 @@ rb_ext_Listbox_AppendEntry(VALUE self, VALUE text, VALUE data)
  * Listbox_InsertEntry
  *
  */
-static VALUE
-rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALUE key)
+static VALUE rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALUE key)
 {
   newtComponent co;
 
@@ -856,8 +813,7 @@ rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALUE key)
  * Listbox_DeleteEntry
  *
  */
-static VALUE
-rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
+static VALUE rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
 {
   newtComponent co;
 
@@ -881,8 +837,7 @@ rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
  * Listbox_Clear
  *
  */
-static VALUE
-rb_ext_Listbox_Clear(VALUE self)
+static VALUE rb_ext_Listbox_Clear(VALUE self)
 {
   newtComponent co;
 
@@ -896,8 +851,7 @@ rb_ext_Listbox_Clear(VALUE self)
  * Listbox_ClearSelection
  *
  */
-static VALUE
-rb_ext_Listbox_ClearSelection(VALUE self)
+static VALUE rb_ext_Listbox_ClearSelection(VALUE self)
 {
   newtComponent co;
 
@@ -911,8 +865,7 @@ rb_ext_Listbox_ClearSelection(VALUE self)
  * Listbox_SelectItem
  *
  */
-static VALUE
-rb_ext_Listbox_SelectItem(VALUE self, VALUE key, VALUE sense)
+static VALUE rb_ext_Listbox_SelectItem(VALUE self, VALUE key, VALUE sense)
 {
   newtComponent co;
 
@@ -936,8 +889,7 @@ rb_ext_Listbox_SelectItem(VALUE self, VALUE key, VALUE sense)
  * CheckboxTree_new
  *
  */
-static VALUE
-rb_ext_CheckboxTree_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
+static VALUE rb_ext_CheckboxTree_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
 {
   newtComponent co;
 
@@ -949,8 +901,7 @@ rb_ext_CheckboxTree_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE f
  * CheckboxTree_AddItem
  *
  */
-static VALUE
-rb_ext_CheckboxTree_AddItem(VALUE self, VALUE args)
+static VALUE rb_ext_CheckboxTree_AddItem(VALUE self, VALUE args)
 /*rb_ext_CheckboxTree_AddItem(VALUE self, VALUE text, VALUE data, VALUE flags)*/
    /*, VALUE index)*/
 {
@@ -1008,8 +959,7 @@ rb_ext_CheckboxTree_AddItem(VALUE self, VALUE args)
  * CheckboxTreeMulti_new
  *
  */
-static VALUE
-rb_ext_CheckboxTreeMulti_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE seq, VALUE flags)
+static VALUE rb_ext_CheckboxTreeMulti_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE seq, VALUE flags)
 {
   newtComponent co;
 
@@ -1025,8 +975,7 @@ rb_ext_CheckboxTreeMulti_new(VALUE self, VALUE left, VALUE top, VALUE height, VA
  * Textbox_new
  *
  */
-static VALUE
-rb_ext_Textbox_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE height, VALUE flags)
+static VALUE rb_ext_Textbox_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE height, VALUE flags)
 {
   newtComponent co;
 
@@ -1038,8 +987,7 @@ rb_ext_Textbox_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE height,
  * Textbox_SetText
  *
  */
-static VALUE
-rb_ext_Textbox_SetText(VALUE self, VALUE text)
+static VALUE rb_ext_Textbox_SetText(VALUE self, VALUE text)
 {
   newtComponent co;
 
@@ -1052,8 +1000,7 @@ rb_ext_Textbox_SetText(VALUE self, VALUE text)
  * Textbox_SetHeight
  *
  */
-static VALUE
-rb_ext_Textbox_SetHeight(VALUE self, VALUE height)
+static VALUE rb_ext_Textbox_SetHeight(VALUE self, VALUE height)
 {
   newtComponent co;
 
@@ -1066,8 +1013,7 @@ rb_ext_Textbox_SetHeight(VALUE self, VALUE height)
  * Textbox_GetNumLines
  *
  */
-static VALUE
-rb_ext_Textbox_GetNumLines(VALUE self)
+static VALUE rb_ext_Textbox_GetNumLines(VALUE self)
 {
   newtComponent co;
 
@@ -1079,8 +1025,7 @@ rb_ext_Textbox_GetNumLines(VALUE self)
  * TextboxReflowed_new
  *
  */
-static VALUE
-rb_ext_TextboxReflowed_new(VALUE self, VALUE left, VALUE top, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp, VALUE flags)
+static VALUE rb_ext_TextboxReflowed_new(VALUE self, VALUE left, VALUE top, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp, VALUE flags)
 {
   newtComponent co;
 
@@ -1108,8 +1053,7 @@ rb_ext_Form_Destroy(VALUE self)
  * Form_new
  *
  */
-static VALUE
-rb_ext_Form_new(VALUE self, VALUE left, VALUE top, VALUE text)
+static VALUE rb_ext_Form_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
 
@@ -1121,8 +1065,7 @@ rb_ext_Form_new(VALUE self, VALUE left, VALUE top, VALUE text)
  * Form_SetBackground
  *
  */
-static VALUE
-rb_ext_Form_SetBackground(VALUE self, VALUE color)
+static VALUE rb_ext_Form_SetBackground(VALUE self, VALUE color)
 {
   newtComponent form;
 
@@ -1132,8 +1075,7 @@ rb_ext_Form_SetBackground(VALUE self, VALUE color)
 }
 
 #if 0
-static VALUE
-rb_ext_Form_AddComponent(VALUE self, VALUE co)
+static VALUE rb_ext_Form_AddComponent(VALUE self, VALUE co)
 {
   newtComponent form, cco;
 
@@ -1148,8 +1090,7 @@ rb_ext_Form_AddComponent(VALUE self, VALUE co)
  * Form_AddComponents
  *
  */
-static VALUE
-rb_ext_Form_AddComponents(VALUE self, VALUE co)
+static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE co)
 {
   int i;
   newtComponent form, cco;
@@ -1167,8 +1108,7 @@ rb_ext_Form_AddComponents(VALUE self, VALUE co)
  * Form_SetHeight
  *
  */
-static VALUE
-rb_ext_Form_SetHeight(VALUE self, VALUE height)
+static VALUE rb_ext_Form_SetHeight(VALUE self, VALUE height)
 {
   newtComponent form;
 
@@ -1181,8 +1121,7 @@ rb_ext_Form_SetHeight(VALUE self, VALUE height)
  * Form_SetWidth
  *
  */
-static VALUE
-rb_ext_Form_SetWidth(VALUE self, VALUE width)
+static VALUE rb_ext_Form_SetWidth(VALUE self, VALUE width)
 {
   newtComponent form;
 
@@ -1195,8 +1134,7 @@ rb_ext_Form_SetWidth(VALUE self, VALUE width)
  * Run_Form
  *
  */
-static VALUE
-rb_ext_Run_Form(VALUE self)
+static VALUE rb_ext_Run_Form(VALUE self)
 {
   newtComponent form, co;
 
@@ -1209,8 +1147,7 @@ rb_ext_Run_Form(VALUE self)
  * Form_DrawForm
  *
  */
-static VALUE
-rb_ext_Form_DrawForm(VALUE self)
+static VALUE rb_ext_Form_DrawForm(VALUE self)
 {
   newtComponent form;
 
@@ -1223,8 +1160,7 @@ rb_ext_Form_DrawForm(VALUE self)
  * Form_AddHotKey
  *
  */
-static VALUE
-rb_ext_Form_AddHotKey(VALUE self, VALUE key)
+static VALUE rb_ext_Form_AddHotKey(VALUE self, VALUE key)
 {
   newtComponent form;
 
@@ -1237,8 +1173,7 @@ rb_ext_Form_AddHotKey(VALUE self, VALUE key)
  * Entry_new
  *
  */
-static VALUE
-rb_ext_Entry_new(VALUE self, VALUE left, VALUE top, VALUE initialValue, VALUE width, VALUE flags)
+static VALUE rb_ext_Entry_new(VALUE self, VALUE left, VALUE top, VALUE initialValue, VALUE width, VALUE flags)
 {
   newtComponent co;
 
@@ -1251,8 +1186,7 @@ rb_ext_Entry_new(VALUE self, VALUE left, VALUE top, VALUE initialValue, VALUE wi
  * Entry_Set
  *
  */
-static VALUE
-rb_ext_Entry_Set(VALUE self, VALUE value, VALUE cursorAtEnd)
+static VALUE rb_ext_Entry_Set(VALUE self, VALUE value, VALUE cursorAtEnd)
 {
   newtComponent co;
 
@@ -1279,8 +1213,7 @@ rb_ext_Entry_Set(VALUE self, VALUE value, VALUE cursorAtEnd)
  * Entry_GetValue
  *
  */
-static VALUE
-rb_ext_Entry_GetValue(VALUE self)
+static VALUE rb_ext_Entry_GetValue(VALUE self)
 {
   newtComponent co;
 
@@ -1292,8 +1225,7 @@ rb_ext_Entry_GetValue(VALUE self)
  * Entry_SetFlags
  *
  */
-static VALUE
-rb_ext_Entry_SetFlags(VALUE self, VALUE args)
+static VALUE rb_ext_Entry_SetFlags(VALUE self, VALUE args)
 {
   newtComponent co;
   long len;
@@ -1315,8 +1247,7 @@ rb_ext_Entry_SetFlags(VALUE self, VALUE args)
  * Scale_new
  *
  */
-static VALUE
-rb_ext_Scale_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE fullValue)
+static VALUE rb_ext_Scale_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE fullValue)
 {
   newtComponent co;
 
@@ -1328,8 +1259,7 @@ rb_ext_Scale_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE fullValue
  * Scale_Set
  *
  */
-static VALUE
-rb_ext_Scale_Set(VALUE self, VALUE amount)
+static VALUE rb_ext_Scale_Set(VALUE self, VALUE amount)
 {
   newtComponent co;
 
@@ -1357,8 +1287,7 @@ rb_ext_Grid_free(VALUE self)
  * Grid_new
  *
  */
-static VALUE
-rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
+static VALUE rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
 {
   newtGrid grid;
 
@@ -1371,8 +1300,7 @@ rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
  * Grid_SetField
  *
  */
-static VALUE
-rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, VALUE val,
+static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, VALUE val,
            VALUE padLeft, VALUE padTop, VALUE padRight, VALUE padBottom,
            VALUE anchor, VALUE flags)
 {
@@ -1391,8 +1319,7 @@ rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, VALUE val,
  * Grid_WrappedWindow
  *
  */
-static VALUE
-rb_ext_Grid_WrappedWindow(VALUE self, VALUE args)
+static VALUE rb_ext_Grid_WrappedWindow(VALUE self, VALUE args)
 {
   newtGrid grid;
   long len;
@@ -1416,8 +1343,7 @@ rb_ext_Grid_WrappedWindow(VALUE self, VALUE args)
  * Grid_GetSize
  *
  */
-static VALUE
-rb_ext_Grid_GetSize(VALUE self)
+static VALUE rb_ext_Grid_GetSize(VALUE self)
 {
   int width, height;
   newtGrid grid;
