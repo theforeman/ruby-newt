@@ -1520,6 +1520,8 @@ Init_ruby_newt(){
   rb_define_const(mNewt, "FLAG_MULTIPLE", INT2FIX(NEWT_FLAG_MULTIPLE));
   rb_define_const(mNewt, "FLAG_SELECTED", INT2FIX(NEWT_FLAG_SELECTED));
   rb_define_const(mNewt, "FLAG_CHECKBOX", INT2FIX(NEWT_FLAG_CHECKBOX));
+  rb_define_const(mNewt, "FLAG_PASSWORD", INT2FIX(NEWT_FLAG_PASSWORD));
+  rb_define_const(mNewt, "FLAG_SHOWCURSOR", INT2FIX(NEWT_FLAG_SHOWCURSOR));
 
   rb_define_const(mNewt, "ANCHOR_LEFT", INT2FIX(NEWT_ANCHOR_LEFT));
   rb_define_const(mNewt, "ANCHOR_RIGHT", INT2FIX(NEWT_ANCHOR_RIGHT));
