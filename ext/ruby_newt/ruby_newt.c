@@ -43,10 +43,6 @@ struct snackWidget_s {
 };
 
 
-/*
- * ReflowText
- *
- */
 static VALUE rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp)
 {
   int actualWidth, actualHeight;
@@ -62,10 +58,6 @@ static VALUE rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDo
   return ary;
 }
 
-/*
- * Screen_new
- *
- */
 static VALUE rb_ext_Screen_new()
 {
   newtInit();
@@ -74,30 +66,18 @@ static VALUE rb_ext_Screen_new()
   return Qnil;
 }
 
-/*
- * Screen_Init
- *
- */
 static VALUE rb_ext_Screen_Init()
 {
   newtInit();
   return Qnil;
 }
 
-/*
- * Screen_Cls
- *
- */
 static VALUE rb_ext_Screen_Cls()
 {
   newtCls();
   return Qnil;
 }
 
-/*
- * Screen_Finished
- *
- */
 static VALUE rb_ext_Screen_Finished()
 {
   newtFinished();
@@ -105,10 +85,6 @@ static VALUE rb_ext_Screen_Finished()
   return Qnil;
 }
 
-/*
- * Screen_WaitForKey
- *
- */
 static VALUE rb_ext_Screen_WaitForKey()
 {
   newtWaitForKey();
@@ -116,10 +92,6 @@ static VALUE rb_ext_Screen_WaitForKey()
   return Qnil;
 }
 
-/*
- * Screen_ClearKeyBuffer
- *
- */
 static VALUE rb_ext_Screen_ClearKeyBuffer()
 {
   newtClearKeyBuffer();
@@ -127,10 +99,6 @@ static VALUE rb_ext_Screen_ClearKeyBuffer()
   return Qnil;
 }
 
-/*
- * Screen_OpenWindow
- *
- */
 static VALUE rb_ext_Screen_OpenWindow(VALUE self, VALUE left, VALUE top,
     VALUE width, VALUE height, VALUE title)
 {
@@ -138,19 +106,11 @@ static VALUE rb_ext_Screen_OpenWindow(VALUE self, VALUE left, VALUE top,
         NUM2INT(width), NUM2INT(height), StringValuePtr(title)));
 }
 
-/*
- * Screen_CenteredWindow
- *
- */
 static VALUE rb_ext_Screen_CenteredWindow(VALUE self, VALUE width, VALUE height, VALUE title)
 {
   return INT2NUM(newtCenteredWindow(NUM2INT(width), NUM2INT(height), StringValuePtr(title)));
 }
 
-/*
- * Screen_PopWindow
- *
- */
 static VALUE rb_ext_Screen_PopWindow(VALUE self)
 {
   newtPopWindow();
@@ -158,10 +118,6 @@ static VALUE rb_ext_Screen_PopWindow(VALUE self)
 }
 
 
-/*
- * Screen_Resume
- *
- */
 static VALUE rb_ext_Screen_Resume()
 {
   newtResume();
@@ -169,10 +125,6 @@ static VALUE rb_ext_Screen_Resume()
   return Qnil;
 }
 
-/*
- * Screen_Suspend
- *
- */
 static VALUE rb_ext_Screen_Suspend()
 {
   newtSuspend();
@@ -180,10 +132,6 @@ static VALUE rb_ext_Screen_Suspend()
   return Qnil;
 }
 
-/*
- * Screen_Refresh
- *
- */
 static VALUE rb_ext_Screen_Refresh()
 {
   newtRefresh();
@@ -191,10 +139,6 @@ static VALUE rb_ext_Screen_Refresh()
   return Qnil;
 }
 
-/*
- * Screen_DrawRootText
- *
- */
 static VALUE rb_ext_Screen_DrawRootText(VALUE self, VALUE col, VALUE row, VALUE text)
 {
 
@@ -202,10 +146,6 @@ static VALUE rb_ext_Screen_DrawRootText(VALUE self, VALUE col, VALUE row, VALUE 
   return Qnil;
 }
 
-/*
- * Screen_PushHelpLine
- *
- */
 static VALUE rb_ext_Screen_PushHelpLine(VALUE self, VALUE text)
 {
   newtPushHelpLine(StringValuePtr(text));
@@ -213,10 +153,6 @@ static VALUE rb_ext_Screen_PushHelpLine(VALUE self, VALUE text)
   return Qnil;
 }
 
-/*
- * Screen_RedrawHelpLine
- *
- */
 static VALUE rb_ext_Screen_RedrawHelpLine(VALUE self)
 {
   newtRedrawHelpLine();
@@ -224,10 +160,6 @@ static VALUE rb_ext_Screen_RedrawHelpLine(VALUE self)
   return Qnil;
 }
 
-/*
- * Screen_PopHelpLine
- *
- */
 static VALUE rb_ext_Screen_PopHelpLine(VALUE self)
 {
   newtPopHelpLine();
@@ -235,10 +167,6 @@ static VALUE rb_ext_Screen_PopHelpLine(VALUE self)
   return Qnil;
 }
 
-/*
- * Screen_Bell
- *
- */
 static VALUE rb_ext_Screen_Bell(VALUE self)
 {
   newtBell();
@@ -246,10 +174,6 @@ static VALUE rb_ext_Screen_Bell(VALUE self)
   return Qnil;
 }
 
-/*
- * Screen_Size
- *
- */
 static VALUE rb_ext_Screen_Size(VALUE self)
 {
   int cols, rows;
@@ -262,10 +186,6 @@ static VALUE rb_ext_Screen_Size(VALUE self)
   return ary;
 }
 
-/*
- * Screen_WinMessage
- *
- */
 static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE args)
 {
   if (RARRAY_LEN(args) < 3) {
@@ -278,10 +198,6 @@ static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE args)
   return Qnil;
 }
 
-/*
- * Screen_WinChoice
- *
- */
 static VALUE rb_ext_Screen_WinChoice(VALUE self, VALUE args)
 {
   if (RARRAY_LEN(args) < 4) {
@@ -295,10 +211,6 @@ static VALUE rb_ext_Screen_WinChoice(VALUE self, VALUE args)
   return Qnil;
 }
 
-/*
- * Screen_WinMenu
- *
- */
 static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
 {
   long len;
@@ -347,10 +259,6 @@ static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
   return Qnil;
 }
 
-/*
- * Screen_WinEntries
- *
- */
 static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
 {
   long len;
@@ -420,10 +328,6 @@ static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
   return Qnil;
 }
 
-/*
- * Widget_callback_function
- *
- */
   void
 rb_ext_Widget_callback_function(newtComponent co, void *proc)
 {
@@ -438,10 +342,6 @@ rb_ext_Widget_callback_function(newtComponent co, void *proc)
   };
 };
 
-/*
- * Widget_callback
- *
- */
 static VALUE rb_ext_Widget_callback(int argc, VALUE argv[], VALUE self)
 {
   newtComponent co;
@@ -464,10 +364,6 @@ static VALUE rb_ext_Widget_callback(int argc, VALUE argv[], VALUE self)
   return value;
 }
 
-/*
- * Widget_equal
- *
- */
 static VALUE rb_ext_Widget_equal(VALUE self, VALUE widget)
 {
   newtComponent co, co2;
@@ -477,15 +373,10 @@ static VALUE rb_ext_Widget_equal(VALUE self, VALUE widget)
 
   Data_Get_Struct(self, struct newtComponent_struct, co);
   Data_Get_Struct(widget, struct newtComponent_struct, co2);
-  /*fprintf(stderr, "* %p %p", co, co2);*/
   if (co == co2) return Qtrue;
   return Qfalse;
 }
 
-/*
- * Label_new
- *
- */
 static VALUE rb_ext_Label_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
@@ -494,10 +385,6 @@ static VALUE rb_ext_Label_new(VALUE self, VALUE left, VALUE top, VALUE text)
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Label_SetText
- *
- */
 static VALUE rb_ext_Label_SetText(VALUE self, VALUE text)
 {
   newtComponent co;
@@ -507,10 +394,6 @@ static VALUE rb_ext_Label_SetText(VALUE self, VALUE text)
   return Qnil;
 }
 
-/*
- * CompactButton_new
- *
- */
 static VALUE rb_ext_CompactButton_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
@@ -519,10 +402,6 @@ static VALUE rb_ext_CompactButton_new(VALUE self, VALUE left, VALUE top, VALUE t
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Button_new
- *
- */
 static VALUE rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
@@ -531,10 +410,6 @@ static VALUE rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Checkbox_new
- *
- */
 static VALUE rb_ext_Checkbox_new(VALUE self, VALUE left, VALUE top, VALUE text,
     VALUE defValue, VALUE seq)
 {
@@ -550,10 +425,6 @@ static VALUE rb_ext_Checkbox_new(VALUE self, VALUE left, VALUE top, VALUE text,
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Checkbox_GetValue
- *
- */
 static VALUE rb_ext_Checkbox_GetValue(VALUE self)
 {
   newtComponent co;
@@ -565,10 +436,6 @@ static VALUE rb_ext_Checkbox_GetValue(VALUE self)
   return rb_str_new2(value);
 }
 
-/*
- * Checkbox_SetValue
- *
- */
 static VALUE rb_ext_Checkbox_SetValue(VALUE self, VALUE value)
 {
   newtComponent co;
@@ -580,10 +447,6 @@ static VALUE rb_ext_Checkbox_SetValue(VALUE self, VALUE value)
   return Qnil;
 }
 
-/*
- * Checkbox_SetFlags
- *
- */
 static VALUE rb_ext_Checkbox_SetFlags(VALUE self, VALUE args)
 {
   newtComponent co;
@@ -603,10 +466,6 @@ static VALUE rb_ext_Checkbox_SetFlags(VALUE self, VALUE args)
   return Qnil;
 }
 
-/*
- * RadioButton_new
- *
- */
 static VALUE rb_ext_RadioButton_new(VALUE self, VALUE left, VALUE top, VALUE text,
     VALUE isDefault, VALUE prevButton)
 {
@@ -623,10 +482,6 @@ static VALUE rb_ext_RadioButton_new(VALUE self, VALUE left, VALUE top, VALUE tex
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Listbox_new
- *
- */
 static VALUE rb_ext_Listbox_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
 {
   newtComponent co;
@@ -635,10 +490,6 @@ static VALUE rb_ext_Listbox_new(VALUE self, VALUE left, VALUE top, VALUE height,
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Listbox_GetCurrent
- *
- */
 static VALUE rb_ext_Listbox_GetCurrent(VALUE self)
 {
   newtComponent co;
@@ -655,10 +506,6 @@ static VALUE rb_ext_Listbox_GetCurrent(VALUE self)
   return INT2NUM(i);
 }
 
-/*
- * Listbox_SetCurrent
- *
- */
 static VALUE rb_ext_Listbox_SetCurrent(VALUE self, VALUE num)
 {
   newtComponent co;
@@ -668,10 +515,6 @@ static VALUE rb_ext_Listbox_SetCurrent(VALUE self, VALUE num)
   return Qnil;
 }
 
-/*
- * Listbox_SetCurrentByKey
- *
- */
 static VALUE rb_ext_Listbox_SetCurrentByKey(VALUE self, VALUE key)
 {
   newtComponent co;
@@ -692,10 +535,6 @@ static VALUE rb_ext_Listbox_SetCurrentByKey(VALUE self, VALUE key)
   return Qnil;
 }
 
-/*
- * Listbox_SetEntry
- *
- */
 static VALUE rb_ext_Listbox_SetEntry(VALUE self, VALUE num, VALUE text)
 {
   newtComponent co;
@@ -705,10 +544,6 @@ static VALUE rb_ext_Listbox_SetEntry(VALUE self, VALUE num, VALUE text)
   return Qnil;
 }
 
-/*
- * Listbox_SetWidth
- *
- */
 static VALUE rb_ext_Listbox_SetWidth(VALUE self, VALUE width)
 {
   newtComponent co;
@@ -718,10 +553,6 @@ static VALUE rb_ext_Listbox_SetWidth(VALUE self, VALUE width)
   return Qnil;
 }
 
-/*
- * Listbox_SetData
- *
- */
 static VALUE rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
 {
   newtComponent co;
@@ -742,10 +573,6 @@ static VALUE rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
   return Qnil;
 }
 
-/*
- * Listbox_AppendEntry
- *
- */
 static VALUE rb_ext_Listbox_AppendEntry(VALUE self, VALUE text, VALUE data)
 {
   newtComponent co;
@@ -766,10 +593,6 @@ static VALUE rb_ext_Listbox_AppendEntry(VALUE self, VALUE text, VALUE data)
   return Qnil;
 }
 
-/*
- * Listbox_InsertEntry
- *
- */
 static VALUE rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALUE key)
 {
   newtComponent co;
@@ -809,10 +632,6 @@ static VALUE rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALU
   return Qnil;
 }
 
-/*
- * Listbox_DeleteEntry
- *
- */
 static VALUE rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
 {
   newtComponent co;
@@ -833,10 +652,6 @@ static VALUE rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
   return Qnil;
 }
 
-/*
- * Listbox_Clear
- *
- */
 static VALUE rb_ext_Listbox_Clear(VALUE self)
 {
   newtComponent co;
@@ -847,10 +662,6 @@ static VALUE rb_ext_Listbox_Clear(VALUE self)
   return Qnil;
 }
 
-/*
- * Listbox_ClearSelection
- *
- */
 static VALUE rb_ext_Listbox_ClearSelection(VALUE self)
 {
   newtComponent co;
@@ -861,10 +672,6 @@ static VALUE rb_ext_Listbox_ClearSelection(VALUE self)
   return Qnil;
 }
 
-/*
- * Listbox_SelectItem
- *
- */
 static VALUE rb_ext_Listbox_SelectItem(VALUE self, VALUE key, VALUE sense)
 {
   newtComponent co;
@@ -885,10 +692,6 @@ static VALUE rb_ext_Listbox_SelectItem(VALUE self, VALUE key, VALUE sense)
   return Qnil;
 }
 
-/*
- * CheckboxTree_new
- *
- */
 static VALUE rb_ext_CheckboxTree_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
 {
   newtComponent co;
@@ -897,10 +700,6 @@ static VALUE rb_ext_CheckboxTree_new(VALUE self, VALUE left, VALUE top, VALUE he
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * CheckboxTree_AddItem
- *
- */
 static VALUE rb_ext_CheckboxTree_AddItem(VALUE self, VALUE args)
   /*rb_ext_CheckboxTree_AddItem(VALUE self, VALUE text, VALUE data, VALUE flags)*/
   /*, VALUE index)*/
@@ -955,10 +754,6 @@ static VALUE rb_ext_CheckboxTree_AddItem(VALUE self, VALUE args)
 #endif
 }
 
-/*
- * CheckboxTreeMulti_new
- *
- */
 static VALUE rb_ext_CheckboxTreeMulti_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE seq, VALUE flags)
 {
   newtComponent co;
@@ -971,10 +766,6 @@ static VALUE rb_ext_CheckboxTreeMulti_new(VALUE self, VALUE left, VALUE top, VAL
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Textbox_new
- *
- */
 static VALUE rb_ext_Textbox_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE height, VALUE flags)
 {
   newtComponent co;
@@ -983,10 +774,6 @@ static VALUE rb_ext_Textbox_new(VALUE self, VALUE left, VALUE top, VALUE width, 
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Textbox_SetText
- *
- */
 static VALUE rb_ext_Textbox_SetText(VALUE self, VALUE text)
 {
   newtComponent co;
@@ -996,10 +783,6 @@ static VALUE rb_ext_Textbox_SetText(VALUE self, VALUE text)
   return Qnil;
 }
 
-/*
- * Textbox_SetHeight
- *
- */
 static VALUE rb_ext_Textbox_SetHeight(VALUE self, VALUE height)
 {
   newtComponent co;
@@ -1009,10 +792,6 @@ static VALUE rb_ext_Textbox_SetHeight(VALUE self, VALUE height)
   return Qnil;
 }
 
-/*
- * Textbox_GetNumLines
- *
- */
 static VALUE rb_ext_Textbox_GetNumLines(VALUE self)
 {
   newtComponent co;
@@ -1021,10 +800,6 @@ static VALUE rb_ext_Textbox_GetNumLines(VALUE self)
   return INT2NUM(newtTextboxGetNumLines(co));
 }
 
-/*
- * TextboxReflowed_new
- *
- */
 static VALUE rb_ext_TextboxReflowed_new(VALUE self, VALUE left, VALUE top, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp, VALUE flags)
 {
   newtComponent co;
@@ -1034,12 +809,7 @@ static VALUE rb_ext_TextboxReflowed_new(VALUE self, VALUE left, VALUE top, VALUE
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Form_Destroy
- *
- */
-  static void
-rb_ext_Form_Destroy(VALUE self)
+static void rb_ext_Form_Destroy(VALUE self)
 {
   newtComponent form;
 
@@ -1049,10 +819,6 @@ rb_ext_Form_Destroy(VALUE self)
   }
 }
 
-/*
- * Form_new
- *
- */
 static VALUE rb_ext_Form_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
@@ -1061,10 +827,6 @@ static VALUE rb_ext_Form_new(VALUE self, VALUE left, VALUE top, VALUE text)
   return Data_Wrap_Struct(self, 0, rb_ext_Form_Destroy, co);
 }
 
-/*
- * Form_SetBackground
- *
- */
 static VALUE rb_ext_Form_SetBackground(VALUE self, VALUE color)
 {
   newtComponent form;
@@ -1086,10 +848,6 @@ static VALUE rb_ext_Form_AddComponent(VALUE self, VALUE co)
 }
 #endif
 
-/*
- * Form_AddComponents
- *
- */
 static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE co)
 {
   int i;
@@ -1104,10 +862,6 @@ static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE co)
   return Qnil;
 }
 
-/*
- * Form_SetHeight
- *
- */
 static VALUE rb_ext_Form_SetHeight(VALUE self, VALUE height)
 {
   newtComponent form;
@@ -1117,10 +871,6 @@ static VALUE rb_ext_Form_SetHeight(VALUE self, VALUE height)
   return Qnil;
 }
 
-/*
- * Form_SetWidth
- *
- */
 static VALUE rb_ext_Form_SetWidth(VALUE self, VALUE width)
 {
   newtComponent form;
@@ -1130,10 +880,6 @@ static VALUE rb_ext_Form_SetWidth(VALUE self, VALUE width)
   return Qnil;
 }
 
-/*
- * Run_Form
- *
- */
 static VALUE rb_ext_Run_Form(VALUE self)
 {
   newtComponent form, co;
@@ -1143,10 +889,6 @@ static VALUE rb_ext_Run_Form(VALUE self)
   return Data_Wrap_Struct(cWidget, 0, 0, co);
 }
 
-/*
- * Form_DrawForm
- *
- */
 static VALUE rb_ext_Form_DrawForm(VALUE self)
 {
   newtComponent form;
@@ -1156,10 +898,6 @@ static VALUE rb_ext_Form_DrawForm(VALUE self)
   return Qnil;
 }
 
-/*
- * Form_AddHotKey
- *
- */
 static VALUE rb_ext_Form_AddHotKey(VALUE self, VALUE key)
 {
   newtComponent form;
@@ -1169,10 +907,6 @@ static VALUE rb_ext_Form_AddHotKey(VALUE self, VALUE key)
   return Qnil;
 }
 
-/*
- * Entry_new
- *
- */
 static VALUE rb_ext_Entry_new(VALUE self, VALUE left, VALUE top, VALUE initialValue, VALUE width, VALUE flags)
 {
   newtComponent co;
@@ -1182,10 +916,6 @@ static VALUE rb_ext_Entry_new(VALUE self, VALUE left, VALUE top, VALUE initialVa
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Entry_Set
- *
- */
 static VALUE rb_ext_Entry_Set(VALUE self, VALUE value, VALUE cursorAtEnd)
 {
   newtComponent co;
@@ -1209,10 +939,6 @@ static VALUE rb_ext_Entry_Set(VALUE self, VALUE value, VALUE cursorAtEnd)
   return Qnil;
 }
 
-/*
- * Entry_GetValue
- *
- */
 static VALUE rb_ext_Entry_GetValue(VALUE self)
 {
   newtComponent co;
@@ -1221,10 +947,6 @@ static VALUE rb_ext_Entry_GetValue(VALUE self)
   return rb_str_new2(newtEntryGetValue(co));
 }
 
-/*
- * Entry_SetFlags
- *
- */
 static VALUE rb_ext_Entry_SetFlags(VALUE self, VALUE args)
 {
   newtComponent co;
@@ -1243,10 +965,6 @@ static VALUE rb_ext_Entry_SetFlags(VALUE self, VALUE args)
   return Qnil;
 }
 
-/*
- * Scale_new
- *
- */
 static VALUE rb_ext_Scale_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE fullValue)
 {
   newtComponent co;
@@ -1255,10 +973,6 @@ static VALUE rb_ext_Scale_new(VALUE self, VALUE left, VALUE top, VALUE width, VA
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-/*
- * Scale_Set
- *
- */
 static VALUE rb_ext_Scale_Set(VALUE self, VALUE amount)
 {
   newtComponent co;
@@ -1268,12 +982,7 @@ static VALUE rb_ext_Scale_Set(VALUE self, VALUE amount)
   return Qnil;
 }
 
-/*
- * Grid_free
- *
- */
-  static void
-rb_ext_Grid_free(VALUE self)
+static void rb_ext_Grid_free(VALUE self)
 {
   newtGrid grid;
 
@@ -1283,10 +992,6 @@ rb_ext_Grid_free(VALUE self)
   }
 }
 
-/*
- * Grid_new
- *
- */
 static VALUE rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
 {
   newtGrid grid;
@@ -1296,10 +1001,6 @@ static VALUE rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
   return Data_Wrap_Struct(self, 0, rb_ext_Grid_free, grid);
 }
 
-/*
- * Grid_SetField
- *
- */
 static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, VALUE val,
     VALUE padLeft, VALUE padTop, VALUE padRight, VALUE padBottom,
     VALUE anchor, VALUE flags)
@@ -1315,10 +1016,6 @@ static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, 
   return Qnil;
 }
 
-/*
- * Grid_WrappedWindow
- *
- */
 static VALUE rb_ext_Grid_WrappedWindow(VALUE self, VALUE args)
 {
   newtGrid grid;
@@ -1339,10 +1036,6 @@ static VALUE rb_ext_Grid_WrappedWindow(VALUE self, VALUE args)
   return Qnil;
 }
 
-/*
- * Grid_GetSize
- *
- */
 static VALUE rb_ext_Grid_GetSize(VALUE self)
 {
   int width, height;
@@ -1357,12 +1050,7 @@ static VALUE rb_ext_Grid_GetSize(VALUE self)
   return ary;
 }
 
-/*
- * Init_ruby_newt
- *
- */
-void
-Init_ruby_newt(){
+void Init_ruby_newt(){
   mNewt = rb_define_module("Newt");
   rb_define_module_function(mNewt, "reflow_text", rb_ext_ReflowText, 4);
 
