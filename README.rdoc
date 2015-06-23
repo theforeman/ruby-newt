@@ -1,19 +1,15 @@
-= newt
+= newt rubygem
 
 * http://github.com/ericsperano/ruby-newt
 
 == DESCRIPTION:
 
-Ruby Bindings for the Newt Library
+Ruby bindings for the newt library
 
 == FEATURES/PROBLEMS:
 
 Code is originally from Noritsugu Nakamura and is available at:
 http://www2s.biglobe.ne.jp/~Nori/ruby/dist/ruby-newt-20020105.tar.gz
-
-I modified it to use RARRAY_LEN, RARRAY_PTR, StringValuePtr, etc.
-
-Still trying it to make it work for 1.9.x
 
 == SYNOPSIS:
 
@@ -22,6 +18,10 @@ See http://github.com/ericsperano/ruby-newt/tree/master/examples for usage examp
 == REQUIREMENTS:
 
 The Newt library and headers.
+
+=== Fedora
+
+  $ dnf install ruby-devel newt-devel
 
 === Ubuntu
 
@@ -32,25 +32,30 @@ The Newt library and headers.
   $ sudo port install libnewt
 
 Then, define these environment variables:
+
   $ export LIBRARY_PATH="/opt/local/lib/"
-  $ export C_INCLUDE_PATH="/opt/local/include/" 
+  $ export C_INCLUDE_PATH="/opt/local/include/"
 
 For some reason, it does not always find the header so symlink it:
+
   $ sudo ln -s /opt/local/include/newt.h  /usr/include/
 
 == INSTALL:
 
-=== RugyGems
-	
+=== From rubygems.org
+
   $ gem install newt
 
-=== Sources		
+=== From source
 
   $ git clone git://github.com/ericsperano/ruby-newt
   $ cd ruby-newt
-  $ sudo gem install newgem
-  $ rake gem
-  $ sudo gem install pkg/newt*gem
+  $ gem build newt.gemspec
+  $ sudo gem install newt-*.gem
+
+=== Development
+
+  $ rake compile
 
 == LICENSE:
 
