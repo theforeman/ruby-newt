@@ -9,7 +9,7 @@ begin
 
   l1 = Newt::Listbox.new(1, 1, 10, Newt::FLAG_SCROLL)
   1.upto(20) do |i|
-    l1.append("item #{i}", i)
+    l1.append("item #{i}", "String no. #{i}")
   end
 
   b = Newt::Button.new(1, 12, "Exit")
@@ -19,7 +19,7 @@ begin
 
   f.run()
 
-  v = l1.get_current
+  v = l1.get_current_as_string
 
 ensure
   Newt::Screen.finish

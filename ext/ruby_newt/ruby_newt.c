@@ -499,20 +499,20 @@ static VALUE rb_ext_Listbox_new(VALUE self, VALUE left, VALUE top, VALUE height,
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-static VALUE rb_ext_Listbox_GetCurrent(VALUE self)
+static VALUE rb_ext_Listbox_GetCurrentAsNumber(VALUE self)
 {
   newtComponent co;
-  int i = 0;
-  int *ip;
-  char *p;
-
-  ip = &i;
 
   Data_Get_Struct(self, struct newtComponent_struct, co);
-  /*p = (char *)newtListboxGetCurrent(co);*/
-  ip = (int *)newtListboxGetCurrent(co);
-  /*return rb_str_new2(p);*/
-  return INT2NUM(i);
+  return INT2NUM((int *) newtListboxGetCurrent(co));
+}
+
+static VALUE rb_ext_Listbox_GetCurrentAsString(VALUE self)
+{
+  newtComponent co;
+
+  Data_Get_Struct(self, struct newtComponent_struct, co);
+  return rb_str_new2((char *) newtListboxGetCurrent(co));
 }
 
 static VALUE rb_ext_Listbox_SetCurrent(VALUE self, VALUE num)
@@ -1117,7 +1117,9 @@ void Init_ruby_newt(){
 
   cListbox = rb_define_class_under(mNewt, "Listbox", cWidget);
   rb_define_singleton_method(cListbox, "new", rb_ext_Listbox_new, 4);
-  rb_define_method(cListbox, "get_current", rb_ext_Listbox_GetCurrent, 0);
+  rb_define_method(cListbox, "get_current", rb_ext_Listbox_GetCurrentAsNumber, 0);
+  rb_define_method(cListbox, "get_current_as_number", rb_ext_Listbox_GetCurrentAsNumber, 0);
+  rb_define_method(cListbox, "get_current_as_string", rb_ext_Listbox_GetCurrentAsString, 0);
   rb_define_method(cListbox, "set_current", rb_ext_Listbox_SetCurrent, 1);
   rb_define_method(cListbox, "setCurrentByKey", rb_ext_Listbox_SetCurrentByKey, 1);
   rb_define_method(cListbox, "set_width", rb_ext_Listbox_SetWidth, 1);
