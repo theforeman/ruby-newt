@@ -200,15 +200,16 @@ static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE args)
 
 static VALUE rb_ext_Screen_WinChoice(VALUE self, VALUE args)
 {
+  int result = 0;
+
   if (RARRAY_LEN(args) < 4) {
     rb_raise(rb_eArgError, "4 arguments required");
   } else {
-
-    newtWinChoice(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
+    result = newtWinChoice(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
         StringValuePtr(RARRAY_PTR(args)[2]), StringValuePtr(RARRAY_PTR(args)[3]));
   }
 
-  return Qnil;
+  return INT2NUM(result);
 }
 
 static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)

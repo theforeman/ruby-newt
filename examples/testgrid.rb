@@ -66,7 +66,7 @@ Newt::Screen.pop_window()
 #f.destroy()
 
 Newt::Screen.win_message("Simple", "Ok", "This is a simple message window")
-Newt::Screen.win_choice("Simple", "Ok", "Cancel", "This is a simple choice window")
+result = Newt::Screen.win_choice("Simple", "Ok", "Cancel", "This is a simple choice window")
 
 textWidth = Newt::Screen.win_menu("Test Menu", "This is a sample invovation of the " +
 						"newtWinMenu() call. It may or may not have a scrollbar, " +
@@ -81,3 +81,4 @@ Newt::Screen.finish
 
 printf "item = %d\n", textWidth
 p v
+p result
