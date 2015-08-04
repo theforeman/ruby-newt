@@ -1111,6 +1111,8 @@ void Init_ruby_newt(){
 
   cRadioButton = rb_define_class_under(mNewt, "RadioButton", cWidget);
   rb_define_singleton_method(cRadioButton, "new", rb_ext_RadioButton_new, 5);
+  rb_define_method(cRadioButton, "get", rb_ext_Checkbox_GetValue, 0);
+  rb_define_method(cRadioButton, "set", rb_ext_Checkbox_SetValue, 1);
 
   cLabel = rb_define_class_under(mNewt, "Label", cWidget);
   rb_define_singleton_method(cLabel, "new", rb_ext_Label_new, 3);
