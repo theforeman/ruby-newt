@@ -824,7 +824,7 @@ static void rb_ext_Form_Destroy(VALUE self)
   newtComponent form;
 
   if (self) {
-    Data_Get_Struct(cForm, struct newtComponent_struct, form);
+    Data_Get_Struct(self, struct newtComponent_struct, form);
     newtFormDestroy(form);
   }
 }
@@ -834,7 +834,8 @@ static VALUE rb_ext_Form_new(VALUE self, VALUE left, VALUE top, VALUE text)
   newtComponent co;
 
   co = newtForm(NULL, NULL, 0);
-  return Data_Wrap_Struct(self, 0, rb_ext_Form_Destroy, co);
+  return Data_Wrap_Struct(self, 0, 0, co);
+  //return Data_Wrap_Struct(self, 0, rb_ext_Form_Destroy, co);
 }
 
 static VALUE rb_ext_Form_SetBackground(VALUE self, VALUE color)
@@ -992,7 +993,7 @@ static VALUE rb_ext_Scale_Set(VALUE self, VALUE amount)
   return Qnil;
 }
 
-static void rb_ext_Grid_free(VALUE self)
+static void rb_ext_Grid_Destroy(VALUE self)
 {
   newtGrid grid;
 
@@ -1007,8 +1008,8 @@ static VALUE rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
   newtGrid grid;
 
   grid = newtCreateGrid(NUM2INT(cols), NUM2INT(rows));
-  /*return Data_Wrap_Struct(self, 0, 0, grid);*/
-  return Data_Wrap_Struct(self, 0, rb_ext_Grid_free, grid);
+  return Data_Wrap_Struct(self, 0, 0, grid);
+  //return Data_Wrap_Struct(self, 0, rb_ext_Grid_Destroy, grid);
 }
 
 static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, VALUE val,
@@ -1178,7 +1179,7 @@ void Init_ruby_newt(){
 
   cGrid = rb_define_class_under(mNewt, "Grid", cWidget);
   rb_define_singleton_method(cGrid, "new", rb_ext_Grid_new, 2);
-  /*rb_define_method(cGrid, "destroy", rb_ext_Grid_free, 0);*/
+  /*rb_define_method(cGrid, "destroy", rb_ext_Grid_Destroy, 0);*/
   rb_define_method(cGrid, "set_field", rb_ext_Grid_SetField, 10);
   rb_define_method(cGrid, "wrapped_window", rb_ext_Grid_WrappedWindow, -2);
   rb_define_method(cGrid, "get_size", rb_ext_Grid_GetSize, 0);
