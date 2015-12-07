@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
     "ext/ruby_newt/extconf.rb",
     "ext/ruby_newt/ruby_newt.c",
     "README.rdoc"
-  ]
+  ] + `git ls-files -z examples`.split("\x0")
   s.extra_rdoc_files = ['README.rdoc']
   s.extensions = ["ext/ruby_newt/extconf.rb"]
   s.require_paths = ["lib", "ext"]
