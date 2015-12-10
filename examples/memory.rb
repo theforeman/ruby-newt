@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+
 require 'rubygems'
 require "newt"
 
@@ -10,10 +11,10 @@ Newt::Screen.new
 Signal.trap("INT") { cleanup }
 
 (1..10).each do
-  f = Newt::Form.new
-  b1 = Newt::Button.new(3, 1, "Exit")
-  b2 = Newt::Button.new(18, 1, "Update")
-  f.add(b1, b2)
+  form = Newt::Form.new
+  button1 = Newt::Button.new(3, 1, "Exit")
+  button2 = Newt::Button.new(18, 1, "Update")
+  form.add(button1, button2)
   Newt::Screen.refresh
   GC.start
 end
