@@ -6,6 +6,8 @@
 #include <rubyio.h>
 #include <newt.h>
 
+#define SYMBOL(str) (ID2SYM(rb_intern(str)))
+
 static VALUE mNewt;
 static VALUE mScreen;
 static VALUE cWidget;
@@ -27,6 +29,7 @@ static VALUE cGrid;
 
 static ID rb_call_id;
 static VALUE rb_ext_Widget_CALLBACK_HASH;
+static struct newtColors newtColors;
 
 typedef struct snackWidget_s snackWidget;
 
@@ -58,10 +61,16 @@ static VALUE rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDo
   return ary;
 }
 
+static VALUE rb_ext_ColorSetCustom(VALUE self, VALUE id)
+{
+  return INT2NUM(NEWT_COLORSET_CUSTOM(NUM2INT(id)));
+}
+
 static VALUE rb_ext_Screen_new()
 {
   newtInit();
   newtCls();
+  memcpy(&newtColors, &newtDefaultColorPalette, sizeof(struct newtColors));
 
   return Qnil;
 }
@@ -69,6 +78,7 @@ static VALUE rb_ext_Screen_new()
 static VALUE rb_ext_Screen_Init()
 {
   newtInit();
+  memcpy(&newtColors, &newtDefaultColorPalette, sizeof(struct newtColors));
   return Qnil;
 }
 
@@ -117,6 +127,158 @@ static VALUE rb_ext_Screen_PopWindow(VALUE self)
   return Qnil;
 }
 
+int rb_ext_Colors_callback_function(VALUE key, VALUE val, VALUE in)
+{
+  struct newtColors *colors;
+
+  colors = (struct newtColors *) in;
+  Check_Type(key, T_SYMBOL);
+
+  if (key == SYMBOL("rootFg"))
+    colors->rootFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("rootBg"))
+    colors->rootBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("borderFg"))
+    colors->borderFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("borderBg"))
+    colors->borderBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("windowFg"))
+    colors->windowFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("windowBg"))
+    colors->windowBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("shadowFg"))
+    colors->shadowFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("shadowBg"))
+    colors->shadowBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("titleFg"))
+    colors->titleFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("titleBg"))
+    colors->titleBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("buttonFg"))
+    colors->buttonFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("buttonBg"))
+    colors->buttonBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actButtonFg"))
+    colors->actButtonFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actButtonBg"))
+    colors->actButtonBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("checkboxFg"))
+    colors->checkboxFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("checkboxBg"))
+    colors->checkboxBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actCheckboxFg"))
+    colors->actCheckboxFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actCheckboxBg"))
+    colors->actCheckboxBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("entryFg"))
+    colors->entryFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("entryBg"))
+    colors->entryBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("labelFg"))
+    colors->labelFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("labelBg"))
+    colors->labelBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("listboxFg"))
+    colors->listboxFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("listboxBg"))
+    colors->listboxBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actListboxFg"))
+    colors->actListboxFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actListboxBg"))
+    colors->actListboxBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("textboxFg"))
+    colors->textboxFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("textboxBg"))
+    colors->textboxBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actTextboxFg"))
+    colors->actTextboxFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actTextboxBg"))
+    colors->actTextboxBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("helpLineFg"))
+    colors->helpLineFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("helpLineBg"))
+    colors->helpLineBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("rootTextBg"))
+    colors->rootTextBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("emptyScale"))
+    colors->emptyScale = StringValuePtr(val);
+
+  else if (key == SYMBOL("fullScale"))
+    colors->fullScale = StringValuePtr(val);
+
+  else if (key == SYMBOL("disabledEntryFg"))
+    colors->disabledEntryFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("disabledEntryBg"))
+    colors->disabledEntryBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("compactButtonFg"))
+    colors->compactButtonFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("compactButtonBg"))
+    colors->compactButtonBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actSelListboxFg"))
+    colors->actSelListboxFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("actSelListboxBg"))
+    colors->actSelListboxBg = StringValuePtr(val);
+
+  else if (key == SYMBOL("selListboxFg"))
+    colors->selListboxFg = StringValuePtr(val);
+
+  else if (key == SYMBOL("selListboxBg"))
+    colors->selListboxBg = StringValuePtr(val);
+
+  return ST_CONTINUE;
+}
+
+static VALUE rb_ext_Screen_SetColors(VALUE self, VALUE colors)
+{
+  Check_Type(colors, T_HASH);
+  rb_hash_foreach(colors, rb_ext_Colors_callback_function, (VALUE) &newtColors);
+  newtSetColors(newtColors);
+  return Qnil;
+}
+
+static VALUE rb_ext_Screen_SetColor(VALUE self, VALUE colorset, VALUE fg, VALUE bg)
+{
+  newtSetColor(NUM2INT(colorset), StringValuePtr(fg), StringValuePtr(bg));
+  return Qnil;
+}
 
 static VALUE rb_ext_Screen_Resume()
 {
@@ -401,6 +563,15 @@ static VALUE rb_ext_Label_SetText(VALUE self, VALUE text)
 
   Data_Get_Struct(self, struct newtComponent_struct, co);
   newtLabelSetText(co, StringValuePtr(text));
+  return Qnil;
+}
+
+static VALUE rb_ext_Label_SetColors(VALUE self, VALUE colorset)
+{
+  newtComponent co;
+
+  Data_Get_Struct(self, struct newtComponent_struct, co);
+  newtLabelSetColors(co, NUM2INT(colorset));
   return Qnil;
 }
 
@@ -810,6 +981,15 @@ static VALUE rb_ext_Textbox_GetNumLines(VALUE self)
   return INT2NUM(newtTextboxGetNumLines(co));
 }
 
+static VALUE rb_ext_Textbox_SetColors(VALUE self, VALUE normal, VALUE active)
+{
+  newtComponent co;
+
+  Data_Get_Struct(self, struct newtComponent_struct, co);
+  newtTextboxSetColors(co, NUM2INT(normal), NUM2INT(active));
+  return Qnil;
+}
+
 static VALUE rb_ext_TextboxReflowed_new(VALUE self, VALUE left, VALUE top, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp, VALUE flags)
 {
   newtComponent co;
@@ -1075,6 +1255,8 @@ void Init_ruby_newt(){
   rb_define_module_function(mScreen, "open_window", rb_ext_Screen_OpenWindow, 5);
   rb_define_module_function(mScreen, "centered_window", rb_ext_Screen_CenteredWindow, 3);
   rb_define_module_function(mScreen, "pop_window", rb_ext_Screen_PopWindow, 0);
+  rb_define_module_function(mScreen, "set_colors", rb_ext_Screen_SetColors, 1);
+  rb_define_module_function(mScreen, "set_color", rb_ext_Screen_SetColor, 3);
   rb_define_module_function(mScreen, "refresh", rb_ext_Screen_Refresh, 0);
   rb_define_module_function(mScreen, "suspend", rb_ext_Screen_Suspend, 0);
   rb_define_module_function(mScreen, "resume", rb_ext_Screen_Resume, 0);
@@ -1118,6 +1300,7 @@ void Init_ruby_newt(){
   cLabel = rb_define_class_under(mNewt, "Label", cWidget);
   rb_define_singleton_method(cLabel, "new", rb_ext_Label_new, 3);
   rb_define_method(cLabel, "set_text", rb_ext_Label_SetText, 1);
+  rb_define_method(cLabel, "set_colors", rb_ext_Label_SetColors, 1);
 
   cListbox = rb_define_class_under(mNewt, "Listbox", cWidget);
   rb_define_singleton_method(cListbox, "new", rb_ext_Listbox_new, 4);
@@ -1149,6 +1332,7 @@ void Init_ruby_newt(){
   rb_define_method(cTextbox, "set_text", rb_ext_Textbox_SetText, 1);
   rb_define_method(cTextbox, "set_height", rb_ext_Textbox_SetHeight, 1);
   rb_define_method(cTextbox, "get_num_lines", rb_ext_Textbox_GetNumLines, 0);
+  rb_define_method(cTextbox, "set_colors", rb_ext_Textbox_SetColors, 2);
 
   cTextboxReflowed = rb_define_class_under(mNewt, "TextboxReflowed", cWidget);
   rb_define_singleton_method(cTextboxReflowed, "new", rb_ext_TextboxReflowed_new, 7);
@@ -1207,6 +1391,7 @@ void Init_ruby_newt(){
   rb_define_const(mNewt, "COLORSET_COMPACTBUTTON", INT2FIX(NEWT_COLORSET_COMPACTBUTTON));
   rb_define_const(mNewt, "COLORSET_ACTSELLISTBOX", INT2FIX(NEWT_COLORSET_ACTSELLISTBOX));
   rb_define_const(mNewt, "COLORSET_SELLISTBOX", INT2FIX(NEWT_COLORSET_SELLISTBOX));
+  rb_define_module_function(mNewt, "COLORSET_CUSTOM", rb_ext_ColorSetCustom, 1);
 
   rb_define_const(mNewt, "ARG_APPEND", INT2FIX(NEWT_ARG_APPEND));
 
