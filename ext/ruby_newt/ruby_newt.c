@@ -12,6 +12,7 @@ static VALUE mNewt;
 static VALUE mScreen;
 static VALUE cWidget;
 static VALUE cForm;
+static VALUE cExitStruct;
 static VALUE cLabel;
 static VALUE cCompactButton;
 static VALUE cButton;
@@ -536,17 +537,104 @@ static VALUE rb_ext_Widget_takesFocus(VALUE self, VALUE index)
   return Qnil;
 }
 
-static VALUE rb_ext_Widget_equal(VALUE self, VALUE widget)
+static VALUE rb_ext_Widget_equal(VALUE self, VALUE obj)
 {
-  newtComponent co, co2;
+  newtComponent co;
+  void *data;
 
-  if (NIL_P(widget)) return Qfalse;
-  if (self == widget) return Qtrue;
+  if (NIL_P(obj)) return Qfalse;
+  if (self == obj) return Qtrue;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  Data_Get_Struct(widget, struct newtComponent_struct, co2);
-  if (co == co2) return Qtrue;
+  if (rb_obj_is_kind_of(obj, cWidget) || rb_obj_is_kind_of(obj, cExitStruct)) {
+    Data_Get_Struct(self, struct newtComponent_struct, co);
+    Data_Get_Struct(obj, void, data);
+    if (co == data) return Qtrue;
+    if (rb_obj_is_kind_of(obj, cExitStruct)
+      && co == ((struct newtExitStruct *) data)->u.co) return Qtrue;
+  }
+
   return Qfalse;
+}
+
+static VALUE rb_ext_ExitStruct_reason(VALUE self)
+{
+  struct newtExitStruct *es;
+
+  Data_Get_Struct(self, struct newtExitStruct, es);
+  return INT2NUM(es->reason);
+}
+
+static VALUE rb_ext_ExitStruct_watch(VALUE self)
+{
+  struct newtExitStruct *es;
+
+  Data_Get_Struct(self, struct newtExitStruct, es);
+  if (es->reason == NEWT_EXIT_FDREADY)
+    return INT2NUM(es->u.watch);
+  else
+    return Qnil;
+}
+
+static VALUE rb_ext_ExitStruct_key(VALUE self)
+{
+  struct newtExitStruct *es;
+
+  Data_Get_Struct(self, struct newtExitStruct, es);
+  if (es->reason == NEWT_EXIT_HOTKEY)
+    return INT2NUM(es->u.key);
+  else
+    return Qnil;
+}
+
+static VALUE rb_ext_ExitStruct_component(VALUE self)
+{
+  struct newtExitStruct *es;
+
+  Data_Get_Struct(self, struct newtExitStruct, es);
+  if (es->reason == NEWT_EXIT_COMPONENT)
+    return Data_Wrap_Struct(cWidget, 0, 0, es->u.co);
+  else
+    return Qnil;
+}
+
+static VALUE rb_ext_ExitStruct_equal(VALUE self, VALUE obj)
+{
+  struct newtExitStruct *es;
+  newtComponent co;
+
+  if (NIL_P(obj)) return Qfalse;
+  if (self == obj) return Qtrue;
+
+  /* Compare components for backwards compatibility with newtRunForm(). */
+  if (rb_obj_is_kind_of(obj, cWidget)) {
+    Data_Get_Struct(self, struct newtExitStruct, es);
+    Data_Get_Struct(obj, struct newtComponent_struct, co);
+    if (es->reason == NEWT_EXIT_COMPONENT && es->u.co == co) return Qtrue;
+  }
+
+  return Qfalse;
+}
+
+static VALUE rb_ext_ExitStruct_inspect(VALUE self)
+{
+  struct newtExitStruct *es;
+  VALUE classname = rb_class_name(rb_obj_class(self));
+  char *class = StringValuePtr(classname);
+
+  Data_Get_Struct(self, struct newtExitStruct, es);
+  switch(es->reason) {
+    case NEWT_EXIT_HOTKEY:
+      return rb_sprintf("#<%s reason=%d, key=%d>", class, es->reason, es->u.key);
+    case NEWT_EXIT_COMPONENT:
+      return rb_sprintf("#<%s reason=%d, component=%p>", class, es->reason, es->u.co);
+    case NEWT_EXIT_FDREADY:
+      return rb_sprintf("#<%s reason=%d, watch=%d>", class, es->reason, es->u.watch);
+    case NEWT_EXIT_TIMER:
+    case NEWT_EXIT_ERROR:
+      return rb_sprintf("#<%s reason=%d>", class, es->reason);
+    default:
+      return rb_call_super(0, NULL);
+  }
 }
 
 static VALUE rb_ext_Label_new(VALUE self, VALUE left, VALUE top, VALUE text)
@@ -1071,13 +1159,15 @@ static VALUE rb_ext_Form_SetWidth(VALUE self, VALUE width)
   return Qnil;
 }
 
-static VALUE rb_ext_Run_Form(VALUE self)
+static VALUE rb_ext_Form_Run(VALUE self)
 {
-  newtComponent form, co;
+  newtComponent form;
+  struct newtExitStruct *es;
 
   Data_Get_Struct(self, struct newtComponent_struct, form);
-  co = newtRunForm(form);
-  return Data_Wrap_Struct(cWidget, 0, 0, co);
+  es = ALLOC(struct newtExitStruct);
+  newtFormRun(form, es);
+  return Data_Wrap_Struct(cExitStruct, 0, xfree, es);
 }
 
 static VALUE rb_ext_Form_DrawForm(VALUE self)
@@ -1346,9 +1436,17 @@ void Init_ruby_newt(){
   rb_define_method(cForm, "add", rb_ext_Form_AddComponents, -2);
   rb_define_method(cForm, "set_height", rb_ext_Form_SetHeight, 1);
   rb_define_method(cForm, "set_width", rb_ext_Form_SetWidth, 1);
-  rb_define_method(cForm, "run", rb_ext_Run_Form, 0);
+  rb_define_method(cForm, "run", rb_ext_Form_Run, 0);
   rb_define_method(cForm, "draw", rb_ext_Form_DrawForm, 0);
   rb_define_method(cForm, "add_hotkey", rb_ext_Form_AddHotKey, 1);
+
+  cExitStruct = rb_define_class_under(cForm, "ExitStruct", rb_cObject);
+  rb_define_private_method(rb_singleton_class(cExitStruct), "new", NULL, 0);
+  rb_define_method(cExitStruct, "reason", rb_ext_ExitStruct_reason, 0);
+  rb_define_method(cExitStruct, "key", rb_ext_ExitStruct_key, 0);
+  rb_define_method(cExitStruct, "component", rb_ext_ExitStruct_component, 0);
+  rb_define_method(cExitStruct, "==", rb_ext_ExitStruct_equal, 1);
+  rb_define_method(cExitStruct, "inspect", rb_ext_ExitStruct_inspect, 0);
 
   cEntry = rb_define_class_under(mNewt, "Entry", cWidget);
   rb_define_singleton_method(cEntry, "new", rb_ext_Entry_new, 5);
@@ -1448,4 +1546,10 @@ void Init_ruby_newt(){
   rb_define_const(mNewt, "KEY_F10", INT2FIX(NEWT_KEY_F10));
   rb_define_const(mNewt, "KEY_F11", INT2FIX(NEWT_KEY_F11));
   rb_define_const(mNewt, "KEY_F12", INT2FIX(NEWT_KEY_F12));
+
+  rb_define_const(mNewt, "EXIT_HOTKEY", INT2FIX(NEWT_EXIT_HOTKEY));
+  rb_define_const(mNewt, "EXIT_COMPONENT", INT2FIX(NEWT_EXIT_COMPONENT));
+  rb_define_const(mNewt, "EXIT_FDREADY", INT2FIX(NEWT_EXIT_FDREADY));
+  rb_define_const(mNewt, "EXIT_TIMER", INT2FIX(NEWT_EXIT_TIMER));
+  rb_define_const(mNewt, "EXIT_ERROR", INT2FIX(NEWT_EXIT_ERROR));
 }
