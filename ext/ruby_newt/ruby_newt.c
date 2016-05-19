@@ -1141,6 +1141,16 @@ static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE co)
   return Qnil;
 }
 
+static VALUE rb_ext_Form_SetCurrent(VALUE self, VALUE obj)
+{
+  newtComponent form, co;
+
+  Data_Get_Struct(self, struct newtComponent_struct, form);
+  Data_Get_Struct(obj,  struct newtComponent_struct, co);
+  newtFormSetCurrent(form, co);
+  return Qnil;
+}
+
 static VALUE rb_ext_Form_SetHeight(VALUE self, VALUE height)
 {
   newtComponent form;
@@ -1434,6 +1444,7 @@ void Init_ruby_newt(){
   rb_define_method(cForm, "set_background", rb_ext_Form_SetBackground, 1);
   /*rb_define_method(cForm, "addComponent", rb_ext_Form_AddComponent, 1);*/
   rb_define_method(cForm, "add", rb_ext_Form_AddComponents, -2);
+  rb_define_method(cForm, "set_current", rb_ext_Form_SetCurrent, 1);
   rb_define_method(cForm, "set_height", rb_ext_Form_SetHeight, 1);
   rb_define_method(cForm, "set_width", rb_ext_Form_SetWidth, 1);
   rb_define_method(cForm, "run", rb_ext_Form_Run, 0);
