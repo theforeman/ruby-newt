@@ -30,7 +30,7 @@ Newt::Screen.refresh
 cs = []
 for i in 0...10
   buf = sprintf("Check %d", i)
-  cs[i] = Newt::Checkbox.new(3, 10 + i, buf, ' ', "")
+  cs[i] = Newt::Checkbox.new(3, 10 + i, buf)
   chklist.add(cs[i])
 end
 
