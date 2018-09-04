@@ -679,18 +679,28 @@ static VALUE rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
-static VALUE rb_ext_Checkbox_new(VALUE self, VALUE left, VALUE top, VALUE text,
-    VALUE defValue, VALUE seq)
+static VALUE rb_ext_Checkbox_new(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
+  const char *text;
+  int left, top;
+  const char *seq = NULL;
+  char defValue = 0;
 
-  if (NIL_P(seq)) {
-    co = newtCheckbox(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
-        StringValuePtr(defValue)[0], NULL, NULL);
-  } else {
-    co = newtCheckbox(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
-        StringValuePtr(defValue)[0], StringValuePtr(seq), NULL);
-  }
+  if (argc < 3 || argc > 5)
+    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 3..5)", argc);
+
+  left = NUM2INT(argv[0]);
+  top = NUM2INT(argv[1]);
+  text = StringValuePtr(argv[2]);
+
+  if (argc > 3 && !NIL_P(argv[3]))
+    defValue = StringValuePtr(argv[3])[0];
+
+  if (argc == 5 && !NIL_P(argv[4]) && RSTRING_LEN(argv[4]) > 0)
+    seq = StringValuePtr(argv[4]);
+
+  co = newtCheckbox(left, top, text, defValue, seq, NULL);
   return Data_Wrap_Struct(self, 0, 0, co);
 }
 
@@ -1387,7 +1397,7 @@ void Init_ruby_newt(){
   rb_define_singleton_method(cButton, "new", rb_ext_Button_new, 3);
 
   cCheckbox = rb_define_class_under(mNewt, "Checkbox", cWidget);
-  rb_define_singleton_method(cCheckbox, "new", rb_ext_Checkbox_new, 5);
+  rb_define_singleton_method(cCheckbox, "new", rb_ext_Checkbox_new, -1);
   rb_define_method(cCheckbox, "get", rb_ext_Checkbox_GetValue, 0);
   rb_define_method(cCheckbox, "set", rb_ext_Checkbox_SetValue, 1);
   rb_define_method(cCheckbox, "set_flags", rb_ext_Checkbox_SetFlags, -2);
