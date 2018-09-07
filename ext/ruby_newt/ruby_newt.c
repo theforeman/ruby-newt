@@ -1037,7 +1037,7 @@ static VALUE rb_ext_CheckboxTreeMulti_new(VALUE self, VALUE left, VALUE top, VAL
 {
   newtComponent co;
 
-  if (NIL_P(seq)) {
+  if (NIL_P(seq) || !RSTRING_LEN(seq)) {
     co = newtCheckboxTreeMulti(NUM2INT(left), NUM2INT(top), NUM2INT(height), NULL, NUM2INT(flags));
   } else {
     co = newtCheckboxTreeMulti(NUM2INT(left), NUM2INT(top), NUM2INT(height), StringValuePtr(seq), NUM2INT(flags));
