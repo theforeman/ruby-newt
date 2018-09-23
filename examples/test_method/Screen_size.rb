@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-require "newt"
+require 'newt'
 
 Newt::Screen.new
 
