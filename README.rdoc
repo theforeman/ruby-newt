@@ -55,12 +55,36 @@ For some reason, it does not always find the header so symlink it:
 
   $ sudo ln -s /opt/local/include/newt.h  /usr/include/
 
+== Migrating from 0.9 to 1.0
+
+The following changes break compatibility with version 0.9 and existing
+programs using the ruby-newt library may need to be changed.
+
+* The following method names have been renamed to create a more consistent
+  interface.
+  * +takesFocus+ has been renamed to +takes_focus+
+  * +setCurrentByKey+ has been renamed to +set_current_by_key+
+  * +setData+ has been renamed to +set_data+
+  * +clearSelection+ has been renamed to +clear_selection+
+* The +get+/+set+ methods have been removed from the +Radiobutton+
+  component.
+* The +get_current+ method for +Listbox+ has been generalized and the
+  +get_current_as_number+ and +get_current_as_string+ methods have been
+  removed.
+* Garbage collection of components and forms has been implemented. This will
+  break applications that reuse components on multiple forms.
+* The publicly global +CALLBACK_HASH+ has been removed. Applications that
+  modify this hash directly will break.
+* The various _add_callback_ methods no longer return the previously set
+  callback when called with no parameters.
+
 == AUTHORS
 
 * Noritsugu Nakamura
 * Eric Sperano
 * Kosuke Asami
 * Lukas Zapletal
+* Robert Gill
 
 == LICENSE
 

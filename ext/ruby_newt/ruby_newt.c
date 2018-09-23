@@ -2,11 +2,9 @@
  * Published under MIT license, see README.
  */
 
+#include <stdbool.h>
 #include <ruby.h>
-#include <rubyio.h>
 #include <newt.h>
-
-#define SYMBOL(str) (ID2SYM(rb_intern(str)))
 
 static VALUE mNewt;
 static VALUE mScreen;
@@ -28,38 +26,134 @@ static VALUE cEntry;
 static VALUE cScale;
 static VALUE cGrid;
 
-static ID rb_call_id;
-static VALUE rb_ext_Widget_CALLBACK_HASH;
+static VALUE rb_ext_sCallback;
 static struct newtColors newtColors;
 
-typedef struct snackWidget_s snackWidget;
+#define SYMBOL(str)       (ID2SYM(rb_intern(str)))
+#define PROC_CALL         (rb_intern("call"))
+#define RECEIVER(context) (rb_funcall((context), rb_intern("receiver"), 0))
+#define IVAR_DATA   (rb_intern("newt_ivar_data"))
+#define IVAR_COLS   (rb_intern("newt_ivar_cols"))
+#define IVAR_ROWS   (rb_intern("newt_ivar_rows"))
+#define IVAR_FILTER_CALLBACK  (rb_intern("newt_ivar_filter_callback"))
+#define IVAR_SUSPEND_CALLBACK (rb_intern("newt_ivar_suspend_callback"))
+#define IVAR_HELP_CALLBACK    (rb_intern("newt_ivar_help_callback"))
+#define IVAR_WIDGET_CALLBACK  (rb_intern("newt_ivar_widget_callback"))
 
-struct callbackStruct {
-  VALUE *cb, *data;
-};
+#define ARG_ERROR(given, expected) \
+  rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected %s)", \
+           (given), (expected))
 
-struct snackWidget_s {
+#define FLAG_GC_FREE       (1 << 0)
+#define FLAG_ADDED_TO_FORM (1 << 1)
+
+typedef struct Widget_data_s Widget_data;
+struct Widget_data_s {
+  VALUE self;
+  VALUE components;
   newtComponent co;
-  char achar;
-  void * apointer;
-  int anint;
-  struct callbackStruct scs;
+  int flags;
 };
 
+static void free_widget(void *ptr);
+static void form_destroy(Widget_data *form);
+
+static const rb_data_type_t Widget_type = {
+  "newtComponent",
+  { NULL, free_widget, NULL },
+  NULL, NULL,
+  RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+#define Make_Widget(klass, component) \
+  (widget_data_make((klass), (component), true))
+
+#define Make_Widget_Ref(klass, component) \
+  (widget_data_make((klass), (component), false));
+
+#define Get_Widget_Data(self, data) \
+  ((data) = widget_data_get((self)))
+
+#define Get_newtComponent(self, component) do { \
+  Widget_data *data; \
+  Get_Widget_Data((self), data); \
+  (component) = data->co; \
+} while (0)
+
+static inline VALUE widget_data_make(VALUE klass, newtComponent co, bool gc_free)
+{
+  Widget_data *data;
+  VALUE self = TypedData_Make_Struct(klass, Widget_data, &Widget_type, data);
+  data->self = self;
+  data->co = co;
+  data->flags |= gc_free;
+  return self;
+}
+
+static inline Widget_data *widget_data_get(VALUE self)
+{
+  VALUE str;
+  Widget_data *data;
+
+  TypedData_Get_Struct(self, Widget_data, &Widget_type, data);
+  if (data == NULL) {
+    str = rb_inspect(self);
+    rb_raise(rb_eRuntimeError, "%s has already been destroyed",
+             StringValuePtr(str));
+  }
+  return data;
+}
+
+static void free_widget(void *ptr)
+{
+  Widget_data *data = (Widget_data *) ptr;
+
+  if (rb_obj_is_kind_of(data->self, cForm)) {
+    form_destroy(data);
+  } else if (data->flags & FLAG_GC_FREE) {
+    newtComponentDestroy(data->co);
+  }
+  free(data);
+}
+
+static void form_destroy(Widget_data *form)
+{
+  if (form->flags & FLAG_GC_FREE) newtFormDestroy(form->co);
+  rb_gc_unregister_address(&form->components);
+}
+
+#define Data_Attach(self, data) do { \
+  VALUE ivar = get_newt_ivar((self)); \
+  rb_ary_push(ivar, (data)); \
+} while (0)
+
+static inline VALUE get_newt_ivar(VALUE self) {
+  VALUE ivar_data;
+
+  if (rb_ivar_defined(self, IVAR_DATA)) {
+    ivar_data = rb_ivar_get(self, IVAR_DATA);
+  } else {
+    ivar_data = rb_ary_new();
+    rb_ivar_set(self, IVAR_DATA, ivar_data);
+  }
+  return ivar_data;
+}
+
+static VALUE rb_ext_Delay(VALUE self, VALUE usecs)
+{
+  newtDelay(NUM2UINT(usecs));
+  return Qnil;
+}
 
 static VALUE rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp)
 {
-  int actualWidth, actualHeight;
   char *p;
-  VALUE ary = rb_ary_new2(3);
+  int actualWidth, actualHeight;
 
-  p = newtReflowText(StringValuePtr(text), NUM2INT(width), NUM2INT(flexDown), NUM2INT(flexUp),
-      &actualWidth, &actualHeight);
+  p = newtReflowText(StringValuePtr(text), NUM2INT(width), NUM2INT(flexDown),
+                     NUM2INT(flexUp), &actualWidth, &actualHeight);
 
-  rb_ary_push(ary, rb_str_new2(p));
-  rb_ary_push(ary, INT2NUM(actualWidth));
-  rb_ary_push(ary, INT2NUM(actualHeight));
-  return ary;
+  return rb_ary_new_from_args(3, rb_str_new2(p), INT2NUM(actualWidth), INT2NUM(actualHeight));
 }
 
 static VALUE rb_ext_ColorSetCustom(VALUE self, VALUE id)
@@ -72,7 +166,6 @@ static VALUE rb_ext_Screen_new()
   newtInit();
   newtCls();
   memcpy(&newtColors, &newtDefaultColorPalette, sizeof(struct newtColors));
-
   return Qnil;
 }
 
@@ -92,29 +185,26 @@ static VALUE rb_ext_Screen_Cls()
 static VALUE rb_ext_Screen_Finished()
 {
   newtFinished();
-
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_WaitForKey()
 {
   newtWaitForKey();
-
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_ClearKeyBuffer()
 {
   newtClearKeyBuffer();
-
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_OpenWindow(VALUE self, VALUE left, VALUE top,
     VALUE width, VALUE height, VALUE title)
 {
-  return INT2NUM(newtOpenWindow(NUM2INT(left), NUM2INT(top),
-        NUM2INT(width), NUM2INT(height), StringValuePtr(title)));
+  return INT2NUM(newtOpenWindow(NUM2INT(left), NUM2INT(top), NUM2INT(width),
+                                NUM2INT(height), StringValuePtr(title)));
 }
 
 static VALUE rb_ext_Screen_CenteredWindow(VALUE self, VALUE width, VALUE height, VALUE title)
@@ -284,21 +374,18 @@ static VALUE rb_ext_Screen_SetColor(VALUE self, VALUE colorset, VALUE fg, VALUE 
 static VALUE rb_ext_Screen_Resume()
 {
   newtResume();
-
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Suspend()
 {
   newtSuspend();
-
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Refresh()
 {
   newtRefresh();
-
   return Qnil;
 }
 
@@ -319,240 +406,293 @@ static VALUE rb_ext_Screen_PushHelpLine(VALUE self, VALUE text)
 static VALUE rb_ext_Screen_RedrawHelpLine(VALUE self)
 {
   newtRedrawHelpLine();
-
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_PopHelpLine(VALUE self)
 {
   newtPopHelpLine();
-
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Bell(VALUE self)
 {
   newtBell();
+  return Qnil;
+}
 
+static VALUE rb_ext_Screen_CursorOff(VALUE self)
+{
+  newtCursorOff();
+  return Qnil;
+}
+
+static VALUE rb_ext_Screen_CursorOn(VALUE self)
+{
+  newtCursorOn();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Size(VALUE self)
 {
   int cols, rows;
-  VALUE ary = rb_ary_new2(2);
 
   newtGetScreenSize(&cols, &rows);
-  rb_ary_push(ary, INT2NUM(cols));
-  rb_ary_push(ary, INT2NUM(rows));
-
-  return ary;
+  return rb_ary_new_from_args(2, INT2NUM(cols), INT2NUM(rows));
 }
 
-static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE args)
+static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE title, VALUE button, VALUE text)
 {
-  if (RARRAY_LEN(args) < 3) {
-    rb_raise(rb_eArgError, "3 arguments required");
-  } else {
-
-    newtWinMessage(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]), StringValuePtr(RARRAY_PTR(args)[2]));
-  }
-
+  newtWinMessage(StringValuePtr(title), StringValuePtr(button), StringValuePtr(text));
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_WinChoice(VALUE self, VALUE args)
+static VALUE rb_ext_Screen_WinChoice(VALUE self, VALUE title, VALUE button1, VALUE button2, VALUE text)
 {
-  int result = 0;
-
-  if (RARRAY_LEN(args) < 4) {
-    rb_raise(rb_eArgError, "4 arguments required");
-  } else {
-    result = newtWinChoice(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
-        StringValuePtr(RARRAY_PTR(args)[2]), StringValuePtr(RARRAY_PTR(args)[3]));
-  }
-
+  int result;
+  result = newtWinChoice(StringValuePtr(title), StringValuePtr(button1),
+                         StringValuePtr(button2), StringValuePtr(text));
   return INT2NUM(result);
 }
 
 static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
 {
-  long len;
-  int i, listItem;
   char **cptr;
+  char *title, *text, *button1, *button2;
 
-  len = RARRAY_LEN(args);
-  if (len == 8) {
-    Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
+  int len, i, listItem;
+  int width, flexDown, flexUp, maxHeight;
 
-    len = RARRAY_LEN(RARRAY_PTR(args)[6]);
-    cptr = ALLOCA_N(char*, len + 1);
-    for (i = 0; i < len; i++) {
-      Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
-      cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
-    }
-    cptr[len] = NULL;
+  len = RARRAY_LENINT(args);
+  if (len < 8 || len > 9)
+    ARG_ERROR(len, "8..9");
 
-    newtWinMenu(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
-        NUM2INT(RARRAY_PTR(args)[2]),
-        NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
-        NUM2INT(RARRAY_PTR(args)[5]),
-        cptr, &listItem, StringValuePtr(RARRAY_PTR(args)[7]), NULL);
-    return INT2NUM(listItem);
-  } else if (len == 9) {
-    Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
+  title = StringValuePtr(RARRAY_PTR(args)[0]);
+  text = StringValuePtr(RARRAY_PTR(args)[1]);
+  width = NUM2INT(RARRAY_PTR(args)[2]);
+  flexDown = NUM2INT(RARRAY_PTR(args)[3]);
+  flexUp = NUM2INT(RARRAY_PTR(args)[4]);
+  maxHeight = NUM2INT(RARRAY_PTR(args)[5]);
 
-    len = RARRAY_LEN(RARRAY_PTR(args)[6]);
-    cptr = ALLOCA_N(char*, len + 1);
-    for (i = 0; i < len; i++) {
-      Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
-      cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
-    }
-    cptr[len] = NULL;
+  Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
 
-    newtWinMenu(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
-        NUM2INT(RARRAY_PTR(args)[2]),
-        NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
-        NUM2INT(RARRAY_PTR(args)[5]),
-        cptr, &listItem, StringValuePtr(RARRAY_PTR(args)[7]), StringValuePtr(RARRAY_PTR(args)[8]), NULL);
-    return INT2NUM(listItem);
-  } else {
-    rb_raise(rb_eArgError, "8 or 9 arguments required");
+  len = RARRAY_LENINT(RARRAY_PTR(args)[6]);
+  cptr = ALLOCA_N(char*, len + 1);
+  for (i = 0; i < len; i++) {
+    Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
+    cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
   }
+  cptr[len] = NULL;
 
-  return Qnil;
+  button1 = StringValuePtr(RARRAY_PTR(args)[7]);
+  button2 = (len == 9) ? StringValuePtr(RARRAY_PTR(args)[8]) : NULL;
+
+  newtWinMenu(title, text, width, flexDown, flexUp, maxHeight, cptr, &listItem, button1, button2, NULL);
+  return INT2NUM(listItem);
 }
 
 static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
 {
-  long len;
-  int i;
-  struct newtWinEntry *items;
-  char * entries[10];
   VALUE ary;
+  struct newtWinEntry *items;
+  char *title, *text, *button1, *button2;
+  int len, i;
+  int width, flexDown, flexUp, dataWidth;
+  char *entries[10];
 
+  len = RARRAY_LENINT(args);
+  if (len < 8 || len > 9)
+    ARG_ERROR(len, "8..9");
+
+  title = StringValuePtr(RARRAY_PTR(args)[0]);
+  text = StringValuePtr(RARRAY_PTR(args)[1]);
+  width = NUM2INT(RARRAY_PTR(args)[2]);
+  flexDown = NUM2INT(RARRAY_PTR(args)[3]);
+  flexUp = NUM2INT(RARRAY_PTR(args)[4]);
+  dataWidth = NUM2INT(RARRAY_PTR(args)[5]);
+  button1 = StringValuePtr(RARRAY_PTR(args)[7]);
+  button2 = (len == 9) ? StringValuePtr(RARRAY_PTR(args)[8]) : NULL;
+
+  Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
+  len = RARRAY_LENINT(RARRAY_PTR(args)[6]);
+  if (len > 8) ARG_ERROR(len, "8 or less");
   memset(entries, 0, sizeof(entries));
-  ary = rb_ary_new();
-
-  len = RARRAY_LEN(args);
-  if (len == 8) {
-    Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
-
-    len = RARRAY_LEN(RARRAY_PTR(args)[6]);
-    if (len > 8) rb_raise(rb_eArgError, "8 or less arguments required");
-    items = ALLOCA_N(struct newtWinEntry, len + 1);
-    for (i = 0; i < len; i++) {
-      Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
-      items[i].text = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
-      items[i].value = entries + i;
-      items[i].flags = 0;
-    }
-    items[len].text = NULL;
-    items[len].value = NULL;
-    items[len].flags = 0;
-
-    newtWinEntries(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
-        NUM2INT(RARRAY_PTR(args)[2]),
-        NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
-        NUM2INT(RARRAY_PTR(args)[5]),
-        items, StringValuePtr(RARRAY_PTR(args)[7]), NULL);
-    for (i = 0; i < len; i++) {
-      rb_ary_push(ary, rb_str_new2(entries[i]));
-    }
-    return ary;
-  } else if (len == 9) {
-    Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
-
-    len = RARRAY_LEN(RARRAY_PTR(args)[6]);
-    if (len > 8) rb_raise(rb_eArgError, "8 or less arguments required");
-    items = ALLOCA_N(struct newtWinEntry, len + 1);
-    for (i = 0; i < len; i++) {
-      Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
-      items[i].text = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
-      items[i].value = entries + i;
-      items[i].flags = 0;
-    }
-    items[len].text = NULL;
-    items[len].value = NULL;
-    items[len].flags = 0;
-
-    newtWinEntries(StringValuePtr(RARRAY_PTR(args)[0]), StringValuePtr(RARRAY_PTR(args)[1]),
-        NUM2INT(RARRAY_PTR(args)[2]),
-        NUM2INT(RARRAY_PTR(args)[3]), NUM2INT(RARRAY_PTR(args)[4]),
-        NUM2INT(RARRAY_PTR(args)[5]),
-        items, StringValuePtr(RARRAY_PTR(args)[7]), StringValuePtr(RARRAY_PTR(args)[8]), NULL);
-    for (i = 0; i < len; i++) {
-      rb_ary_push(ary, rb_str_new2(entries[i]));
-    }
-    return ary;
-  } else {
-    rb_raise(rb_eArgError, "8 or 9 arguments required");
+  items = ALLOCA_N(struct newtWinEntry, len + 1);
+  for (i = 0; i < len; i++) {
+    Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
+    items[i].text = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
+    items[i].value = entries + i;
+    items[i].flags = 0;
   }
+  items[len].text = NULL;
+  items[len].value = NULL;
+  items[len].flags = 0;
 
+  ary = rb_ary_new();
+  newtWinEntries(title, text, width, flexDown, flexUp, dataWidth, items, button1, button2, NULL);
+  for (i = 0; i < len; i++) { rb_ary_push(ary, rb_str_new2(entries[i])); }
+  return ary;
+}
+
+void rb_ext_Screen_suspend_callback_function(void *cb)
+{
+  VALUE context, callback, data;
+
+  context = RSTRUCT_GET((VALUE) cb, 1);
+  callback = RSTRUCT_GET((VALUE) cb, 2);
+  data = RSTRUCT_GET((VALUE) cb, 3);
+
+  if (SYMBOL_P(callback)) {
+    rb_funcall(RECEIVER(context), SYM2ID(callback), 1, data);
+  } else {
+    rb_funcall(callback, PROC_CALL, 1, data);
+  }
+}
+
+void rb_ext_Screen_help_callback_function(newtComponent co, void *data)
+{
+  VALUE widget, cb;
+  VALUE context, callback;
+
+  widget = Make_Widget_Ref(cForm, co);
+  cb = rb_ivar_get(mScreen, IVAR_HELP_CALLBACK);
+  context = RSTRUCT_GET((VALUE) cb, 1);
+  callback = RSTRUCT_GET((VALUE) cb, 2);
+
+  if (SYMBOL_P(callback)) {
+    rb_funcall(RECEIVER(context), SYM2ID(callback), 2, widget, (VALUE) data);
+  } else {
+    rb_funcall(callback, PROC_CALL, 2, widget, (VALUE) data);
+  }
+}
+
+void rb_ext_Widget_callback_function(newtComponent co, void *cb)
+{
+  VALUE widget, context, callback, data;
+
+  widget = RSTRUCT_GET((VALUE) cb, 0);
+  context = RSTRUCT_GET((VALUE) cb, 1);
+  callback = RSTRUCT_GET((VALUE) cb, 2);
+  data = RSTRUCT_GET((VALUE) cb, 3);
+
+  if (SYMBOL_P(callback)) {
+    rb_funcall(RECEIVER(context), SYM2ID(callback), 2, widget, data);
+  } else {
+    rb_funcall(callback, PROC_CALL, 2, widget, data);
+  }
+}
+
+int rb_ext_Entry_filter_function(newtComponent co, void *cb, int ch, int cursor)
+{
+  VALUE widget, context, callback, data;
+  VALUE vch, vcursor;
+  VALUE rv;
+
+  widget = RSTRUCT_GET((VALUE) cb, 0);
+  context = RSTRUCT_GET((VALUE) cb, 1);
+  callback = RSTRUCT_GET((VALUE) cb, 2);
+  data = RSTRUCT_GET((VALUE) cb, 3);
+  vch = INT2NUM(ch);
+  vcursor = INT2NUM(cursor);
+
+  if (SYMBOL_P(callback)) {
+    rv = rb_funcall(RECEIVER(context), SYM2ID(callback), 4, widget, data, vch, vcursor);
+  } else {
+    rv = rb_funcall(callback, PROC_CALL, 4, widget, data, vch, vcursor);
+  }
+  return (NIL_P(rv) || !RB_TYPE_P(rv, T_FIXNUM)) ? 0 : NUM2INT(rv);
+}
+
+static VALUE rb_ext_Screen_SuspendCallback(int argc, VALUE *argv, VALUE self)
+{
+  VALUE cb, data = Qnil;
+
+  if (argc < 1 || argc > 2)
+    ARG_ERROR(argc, "1 or 2");
+
+  if (argc == 2)
+    data = argv[1];
+
+  cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
+  rb_ivar_set(self, IVAR_SUSPEND_CALLBACK, cb);
+  newtSetSuspendCallback(rb_ext_Screen_suspend_callback_function, (void *) cb);
   return Qnil;
 }
 
-  void
-rb_ext_Widget_callback_function(newtComponent co, void *proc)
+static VALUE rb_ext_Screen_HelpCallback(VALUE self, VALUE cb)
 {
-  VALUE widget;
+  cb = rb_struct_new(rb_ext_sCallback, Qnil, rb_binding_new(), cb, Qnil, NULL);
+  rb_ivar_set(self, IVAR_HELP_CALLBACK, cb);
+  newtSetHelpCallback(rb_ext_Screen_help_callback_function);
+  return Qnil;
+}
 
-  widget = Data_Wrap_Struct(cWidget, 0, 0, co);
-  if(SYMBOL_P(proc)){
-    rb_funcall(rb_mKernel, SYM2ID((VALUE)proc), 1, widget);
-  }
-  else{
-    rb_funcall((VALUE)proc, rb_call_id, 1, widget);
-  };
-};
-
-static VALUE rb_ext_Widget_callback(int argc, VALUE argv[], VALUE self)
+static VALUE rb_ext_Widget_callback(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
-  VALUE arg1, value;
+  VALUE cb, data = Qnil;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  switch(rb_scan_args(argc, argv, "01", &arg1)){
-    case 0:
-      value = rb_hash_aref(rb_ext_Widget_CALLBACK_HASH, self);
-      break;
-    case 1:
-      rb_hash_aset(rb_ext_Widget_CALLBACK_HASH, self, arg1);
-      newtComponentAddCallback(co, rb_ext_Widget_callback_function, (void*)arg1);
-      value = Qnil;
-      break;
-    default:
-      rb_bug("rb_ext_Widget_callback");
-  };
+  if (argc < 1 || argc > 2)
+    ARG_ERROR(argc, "1 or 2");
 
-  return value;
+  if (argc == 2)
+    data = argv[1];
+
+  Get_newtComponent(self, co);
+  cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
+  rb_ivar_set(self, IVAR_WIDGET_CALLBACK, cb);
+  newtComponentAddCallback(co, rb_ext_Widget_callback_function, (void *) cb);
+  return Qnil;
 }
 
 static VALUE rb_ext_Widget_takesFocus(VALUE self, VALUE index)
 {
-  newtComponent form;
+  newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
-  newtComponentTakesFocus(form, NUM2INT(index));
+  Get_newtComponent(self, co);
+  newtComponentTakesFocus(co, NUM2INT(index));
   return Qnil;
+}
+
+static VALUE rb_ext_Widget_GetPosition(VALUE self)
+{
+  newtComponent co;
+  int left, top;
+
+  Get_newtComponent(self, co);
+  newtComponentGetPosition(co, &left, &top);
+  return rb_ary_new_from_args(2, INT2NUM(left), INT2NUM(top));
+}
+
+static VALUE rb_ext_Widget_GetSize(VALUE self)
+{
+  newtComponent co;
+  int width, height;
+
+  Get_newtComponent(self, co);
+  newtComponentGetSize(co, &width, &height);
+  return rb_ary_new_from_args(2, INT2NUM(width), INT2NUM(height));
 }
 
 static VALUE rb_ext_Widget_equal(VALUE self, VALUE obj)
 {
-  newtComponent co;
+  newtComponent co, cco;
   void *data;
 
   if (NIL_P(obj)) return Qfalse;
   if (self == obj) return Qtrue;
 
   if (rb_obj_is_kind_of(obj, cWidget) || rb_obj_is_kind_of(obj, cExitStruct)) {
-    Data_Get_Struct(self, struct newtComponent_struct, co);
-    Data_Get_Struct(obj, void, data);
-    if (co == data) return Qtrue;
-    if (rb_obj_is_kind_of(obj, cExitStruct)
-      && co == ((struct newtExitStruct *) data)->u.co) return Qtrue;
+    Get_newtComponent(self, co);
+    if (rb_obj_is_kind_of(obj, cExitStruct)) {
+      Data_Get_Struct(obj, struct newtExitStruct, data);
+      if (co == ((struct newtExitStruct *) data)->u.co)
+        return Qtrue;
+    } else {
+      Get_newtComponent(obj, cco);
+      if (co == cco) return Qtrue;
+    }
   }
-
   return Qfalse;
 }
 
@@ -592,7 +732,7 @@ static VALUE rb_ext_ExitStruct_component(VALUE self)
 
   Data_Get_Struct(self, struct newtExitStruct, es);
   if (es->reason == NEWT_EXIT_COMPONENT)
-    return Data_Wrap_Struct(cWidget, 0, 0, es->u.co);
+    return Make_Widget(cWidget, es->u.co);
   else
     return Qnil;
 }
@@ -608,10 +748,9 @@ static VALUE rb_ext_ExitStruct_equal(VALUE self, VALUE obj)
   /* Compare components for backwards compatibility with newtRunForm(). */
   if (rb_obj_is_kind_of(obj, cWidget)) {
     Data_Get_Struct(self, struct newtExitStruct, es);
-    Data_Get_Struct(obj, struct newtComponent_struct, co);
+    Get_newtComponent(obj, co);
     if (es->reason == NEWT_EXIT_COMPONENT && es->u.co == co) return Qtrue;
   }
-
   return Qfalse;
 }
 
@@ -642,15 +781,15 @@ static VALUE rb_ext_Label_new(VALUE self, VALUE left, VALUE top, VALUE text)
   newtComponent co;
 
   co = newtLabel(NUM2INT(left), NUM2INT(top), StringValuePtr(text));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Label_SetText(VALUE self, VALUE text)
 {
-  newtComponent co;
+  Widget_data *data;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  newtLabelSetText(co, StringValuePtr(text));
+  Get_Widget_Data(self, data);
+  newtLabelSetText(data->co, StringValuePtr(text));
   return Qnil;
 }
 
@@ -658,7 +797,7 @@ static VALUE rb_ext_Label_SetColors(VALUE self, VALUE colorset)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   newtLabelSetColors(co, NUM2INT(colorset));
   return Qnil;
 }
@@ -668,7 +807,7 @@ static VALUE rb_ext_CompactButton_new(VALUE self, VALUE left, VALUE top, VALUE t
   newtComponent co;
 
   co = newtCompactButton(NUM2INT(left), NUM2INT(top), StringValuePtr(text));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
@@ -676,23 +815,17 @@ static VALUE rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
   newtComponent co;
 
   co = newtButton(NUM2INT(left), NUM2INT(top), StringValuePtr(text));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Checkbox_new(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
-  const char *text;
-  int left, top;
   const char *seq = NULL;
   char defValue = 0;
 
   if (argc < 3 || argc > 5)
-    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 3..5)", argc);
-
-  left = NUM2INT(argv[0]);
-  top = NUM2INT(argv[1]);
-  text = StringValuePtr(argv[2]);
+    ARG_ERROR(argc, "3..5");
 
   if (argc > 3 && !NIL_P(argv[3]))
     defValue = StringValuePtr(argv[3])[0];
@@ -700,16 +833,16 @@ static VALUE rb_ext_Checkbox_new(int argc, VALUE *argv, VALUE self)
   if (argc == 5 && !NIL_P(argv[4]) && RSTRING_LEN(argv[4]) > 0)
     seq = StringValuePtr(argv[4]);
 
-  co = newtCheckbox(left, top, text, defValue, seq, NULL);
-  return Data_Wrap_Struct(self, 0, 0, co);
+  co = newtCheckbox(NUM2INT(argv[0]), NUM2INT(argv[1]), StringValuePtr(argv[2]), defValue, seq, NULL);
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Checkbox_GetValue(VALUE self)
 {
   newtComponent co;
-  char value[10];
+  char value[2];
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   value[0] = newtCheckboxGetValue(co);
   value[1] = '\0';
   return rb_str_new2(value);
@@ -719,77 +852,91 @@ static VALUE rb_ext_Checkbox_SetValue(VALUE self, VALUE value)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   if (RSTRING_LEN(value) > 0) {
     newtCheckboxSetValue(co, StringValuePtr(value)[0]);
   }
   return Qnil;
 }
 
-static VALUE rb_ext_Checkbox_SetFlags(VALUE self, VALUE args)
+static VALUE rb_ext_Checkbox_SetFlags(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
-  long len;
+  int sense = NEWT_FLAGS_SET;
 
-  len = RARRAY_LEN(args);
-  if (len == 1) {
-    Data_Get_Struct(self, struct newtComponent_struct, co);
-    newtCheckboxSetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NEWT_FLAGS_SET);
-  } else if (len == 2) {
-    Data_Get_Struct(self, struct newtComponent_struct, co);
-    newtCheckboxSetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NUM2INT(RARRAY_PTR(args)[1]));
-  } else {
-    rb_raise(rb_eArgError, "1 argument or 2 arguments required");
-  }
+  if (argc < 1 || argc > 2)
+    ARG_ERROR(argc, "1..2");
 
+  if (argc == 2)
+    sense = NUM2INT(argv[1]);
+
+  Get_newtComponent(self, co);
+  newtCheckboxSetFlags(co, NUM2INT(argv[0]), sense);
   return Qnil;
 }
 
-static VALUE rb_ext_RadioButton_new(VALUE self, VALUE left, VALUE top, VALUE text,
-    VALUE isDefault, VALUE prevButton)
+static VALUE rb_ext_RadioButton_new(int argc, VALUE *argv, VALUE self)
+{
+  newtComponent co, cco = NULL;
+  int is_default = 0;
+
+  if (argc < 3 || argc > 5)
+    ARG_ERROR(argc, "3..5");
+
+  if (argc >= 4)
+    is_default = NUM2INT(argv[3]);
+
+  if (argc == 5 && argv[4] != Qnil)
+    Get_newtComponent(argv[4], cco);
+
+  co = newtRadiobutton(NUM2INT(argv[0]), NUM2INT(argv[1]), StringValuePtr(argv[2]), is_default, cco);
+  return Make_Widget(self, co);
+}
+
+static VALUE rb_ext_RadioButton_GetCurrent(VALUE self)
 {
   newtComponent co, cco;
 
-  if (NIL_P(prevButton)) {
-    co = newtRadiobutton(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
-        NUM2INT(isDefault), NULL);
-  } else {
-    Data_Get_Struct(prevButton, struct newtComponent_struct, cco);
-    co = newtRadiobutton(NUM2INT(left), NUM2INT(top), StringValuePtr(text),
-        NUM2INT(isDefault), cco);
-  }
-  return Data_Wrap_Struct(self, 0, 0, co);
+  Get_newtComponent(self, co);
+  cco = newtRadioGetCurrent(co);
+  return Make_Widget_Ref(cRadioButton, cco);
 }
 
-static VALUE rb_ext_Listbox_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
+static VALUE rb_ext_RadioButton_SetCurrent(VALUE self)
 {
   newtComponent co;
 
-  co = newtListbox(NUM2INT(left), NUM2INT(top), NUM2INT(height), NUM2INT(flags));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  Get_newtComponent(self, co);
+  newtRadioSetCurrent(co);
+  return Qnil;
 }
 
-static VALUE rb_ext_Listbox_GetCurrentAsNumber(VALUE self)
+static VALUE rb_ext_Listbox_new(int argc, VALUE *argv, VALUE self)
+{
+  newtComponent co;
+  int flags;
+
+  if (argc < 3 || argc > 4)
+    ARG_ERROR(argc, "3..4");
+
+  flags = (argc == 4) ? NUM2INT(argv[3]) : 0;
+  co = newtListbox(NUM2INT(argv[0]), NUM2INT(argv[1]), NUM2INT(argv[2]), flags);
+  return Make_Widget(self, co);
+}
+
+static VALUE rb_ext_Listbox_GetCurrent(VALUE self)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  return INT2NUM((int *) newtListboxGetCurrent(co));
-}
-
-static VALUE rb_ext_Listbox_GetCurrentAsString(VALUE self)
-{
-  newtComponent co;
-
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-  return rb_str_new2((char *) newtListboxGetCurrent(co));
+  Get_newtComponent(self, co);
+  return (VALUE) newtListboxGetCurrent(co);
 }
 
 static VALUE rb_ext_Listbox_SetCurrent(VALUE self, VALUE num)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   newtListboxSetCurrent(co, NUM2INT(num));
   return Qnil;
 }
@@ -798,27 +945,26 @@ static VALUE rb_ext_Listbox_SetCurrentByKey(VALUE self, VALUE key)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
-  switch(TYPE(key)) {
-    case T_STRING:
-      newtListboxSetCurrentByKey(co, (void *)StringValuePtr(key));
-      break;
-    case T_FIXNUM:
-      newtListboxSetCurrentByKey(co, (void *)NUM2INT(key));
-      break;
-    default:
-      rb_raise(rb_eTypeError, "String or Fixnum expected");
-      break;
-  }
+  Get_newtComponent(self, co);
+  newtListboxSetCurrentByKey(co, (void *) key);
   return Qnil;
+}
+
+static VALUE rb_ext_Listbox_GetEntry(VALUE self, VALUE num)
+{
+  char *text; void *data;
+  newtComponent co;
+
+  Get_newtComponent(self, co);
+  newtListboxGetEntry(co, NUM2INT(num), &text, &data);
+  return rb_ary_new_from_args(2, rb_str_new2(text), (VALUE *) data);
 }
 
 static VALUE rb_ext_Listbox_SetEntry(VALUE self, VALUE num, VALUE text)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   newtListboxSetEntry(co, NUM2INT(num), StringValuePtr(text));
   return Qnil;
 }
@@ -827,7 +973,7 @@ static VALUE rb_ext_Listbox_SetWidth(VALUE self, VALUE width)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   newtListboxSetWidth(co, NUM2INT(width));
   return Qnil;
 }
@@ -836,19 +982,9 @@ static VALUE rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
-  switch(TYPE(data)) {
-    case T_STRING:
-      newtListboxSetData(co, NUM2INT(num), (void *)StringValuePtr(data));
-      break;
-    case T_FIXNUM:
-      newtListboxSetData(co, NUM2INT(num), (void *)NUM2INT(data));
-      break;
-    default:
-      rb_raise(rb_eTypeError, "String or Fixnum expected");
-      break;
-  }
+  Get_newtComponent(self, co);
+  Data_Attach(self, data);
+  newtListboxSetData(co, NUM2INT(num), (void *) data);
   return Qnil;
 }
 
@@ -856,19 +992,9 @@ static VALUE rb_ext_Listbox_AppendEntry(VALUE self, VALUE text, VALUE data)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
-  switch(TYPE(data)) {
-    case T_STRING:
-      newtListboxAppendEntry(co, StringValuePtr(text), (void *)StringValuePtr(data));
-      break;
-    case T_FIXNUM:
-      newtListboxAppendEntry(co, StringValuePtr(text), (void *)NUM2INT(data));
-      break;
-    default:
-      rb_raise(rb_eTypeError, "String or Fixnum expected");
-      break;
-  }
+  Get_newtComponent(self, co);
+  Data_Attach(self, data);
+  newtListboxAppendEntry(co, StringValuePtr(text), (void *) data);
   return Qnil;
 }
 
@@ -876,38 +1002,9 @@ static VALUE rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALU
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
-  switch(TYPE(data)) {
-    case T_STRING:
-      switch(TYPE(key)) {
-        case T_STRING:
-          newtListboxInsertEntry(co, StringValuePtr(text), (void *)StringValuePtr(data), (void *)StringValuePtr(key));
-          break;
-        case T_FIXNUM:
-          newtListboxInsertEntry(co, StringValuePtr(text), (void *)StringValuePtr(data), (void *)NUM2INT(key));
-          break;
-        default:
-          rb_raise(rb_eTypeError, "String or Fixnum expected");
-          break;
-      }
-    case T_FIXNUM:
-      switch(TYPE(key)) {
-        case T_STRING:
-          newtListboxInsertEntry(co, StringValuePtr(text), (void *)NUM2INT(data), (void *)StringValuePtr(key));
-          break;
-        case T_FIXNUM:
-          newtListboxInsertEntry(co, StringValuePtr(text), (void *)NUM2INT(data), (void *)NUM2INT(key));
-          break;
-        default:
-          rb_raise(rb_eTypeError, "String or Fixnum expected");
-          break;
-      }
-      break;
-    default:
-      rb_raise(rb_eTypeError, "String or Fixnum expected");
-      break;
-  }
+  Get_newtComponent(self, co);
+  Data_Attach(self, data);
+  newtListboxInsertEntry(co, StringValuePtr(text), (void *) data, (void *) key);
   return Qnil;
 }
 
@@ -915,19 +1012,8 @@ static VALUE rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
-  switch(TYPE(data)) {
-    case T_STRING:
-      newtListboxDeleteEntry(co, (void *)StringValuePtr(data));
-      break;
-    case T_FIXNUM:
-      newtListboxDeleteEntry(co, (void *)NUM2INT(data));
-      break;
-    default:
-      rb_raise(rb_eTypeError, "String or Fixnum expected");
-      break;
-  }
+  Get_newtComponent(self, co);
+  newtListboxDeleteEntry(co, (void *) data);
   return Qnil;
 }
 
@@ -935,18 +1021,33 @@ static VALUE rb_ext_Listbox_Clear(VALUE self)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
+  Get_newtComponent(self, co);
   newtListboxClear(co);
   return Qnil;
+}
+
+static VALUE rb_ext_Listbox_GetSelection(VALUE self)
+{
+  newtComponent co;
+  VALUE ary, item;
+  void **items;
+  int i, numitems = 0;
+
+  Get_newtComponent(self, co);
+  items = newtListboxGetSelection(co, &numitems);
+  ary = rb_ary_new();
+  for (i = 0; i < numitems; i++) {
+      item = (VALUE) items[i];
+      rb_ary_push(ary, item);
+  }
+  return ary;
 }
 
 static VALUE rb_ext_Listbox_ClearSelection(VALUE self)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
+  Get_newtComponent(self, co);
   newtListboxClearSelection(co);
   return Qnil;
 }
@@ -955,109 +1056,201 @@ static VALUE rb_ext_Listbox_SelectItem(VALUE self, VALUE key, VALUE sense)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
-  switch(TYPE(key)) {
-    case T_STRING:
-      newtListboxSelectItem(co, (void *)StringValuePtr(key), NUM2INT(sense));
-      break;
-    case T_FIXNUM:
-      newtListboxSelectItem(co, (void *)NUM2INT(key), NUM2INT(sense));
-      break;
-    default:
-      rb_raise(rb_eTypeError, "String or Fixnum expected");
-      break;
-  }
+  Get_newtComponent(self, co);
+  newtListboxSelectItem(co, (void *) key, NUM2INT(sense));
   return Qnil;
 }
 
-static VALUE rb_ext_CheckboxTree_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE flags)
+static VALUE rb_ext_Listbox_ItemCount(VALUE self)
 {
   newtComponent co;
 
-  co = newtCheckboxTree(NUM2INT(left), NUM2INT(top), NUM2INT(height), NUM2INT(flags));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  Get_newtComponent(self, co);
+  return INT2NUM(newtListboxItemCount(co));
+}
+
+static VALUE checkboxtree_collect_selection(int numitems, VALUE *data)
+{
+  VALUE ary;
+  int i;
+
+  ary = Qnil;
+  if (numitems > 0) {
+    ary = rb_ary_new();
+    for (i = 0; i < numitems; i++)
+      rb_ary_push(ary, data[i]);
+  }
+  return ary;
+}
+
+static VALUE rb_ext_CheckboxTree_new(int argc, VALUE *argv, VALUE self)
+{
+  newtComponent co;
+  int flags;
+
+  if (argc < 3 || argc > 4)
+    ARG_ERROR(argc, "3..4");
+
+  flags = (argc == 4) ? NUM2INT(argv[3]) : 0;
+  co = newtCheckboxTree(NUM2INT(argv[0]), NUM2INT(argv[1]), NUM2INT(argv[2]), flags);
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_CheckboxTree_AddItem(VALUE self, VALUE args)
-  /*rb_ext_CheckboxTree_AddItem(VALUE self, VALUE text, VALUE data, VALUE flags)*/
-  /*, VALUE index)*/
 {
   newtComponent co;
-#if 1
-  int i, len;
   int *indexes;
+  char *text; VALUE data;
+  int i, len, flags;
 
-  len = RARRAY_LEN(args);
-  if (len < 4) {
-    rb_raise(rb_eArgError, "4 arguments required");
-  } else {
-    Data_Get_Struct(self, struct newtComponent_struct, co);
+  len = RARRAY_LENINT(args);
+  if (len < 4)
+    ARG_ERROR(len, "4+");
 
-    indexes = ALLOCA_N(int, (len - 4) + 2);
-    for (i = 0; i < (len - 4) + 1; i++) {
-      indexes[i] = NUM2INT(RARRAY_PTR(args)[i+3]);
-    }
-    indexes[(len - 4) + 1] = NEWT_ARG_LAST;
+  Get_newtComponent(self, co);
+  indexes = ALLOCA_N(int, (len - 4) + 2);
+  for (i = 0; i < (len - 4) + 1; i++)
+    indexes[i] = NUM2INT(RARRAY_PTR(args)[i+3]);
+  indexes[(len - 4) + 1] = NEWT_ARG_LAST;
 
-    switch(TYPE(RARRAY_PTR(args)[1])) {
-      case T_STRING:
-        newtCheckboxTreeAddArray(co, StringValuePtr(RARRAY_PTR(args)[0]), (void *)StringValuePtr(RARRAY_PTR(args)[1]),
-            NUM2INT(RARRAY_PTR(args)[2]), indexes);
-        break;
-      case T_FIXNUM:
-        newtCheckboxTreeAddArray(co, StringValuePtr(RARRAY_PTR(args)[0]), (void *)NUM2INT(RARRAY_PTR(args)[1]),
-            NUM2INT(RARRAY_PTR(args)[2]), indexes);
-        break;
-      default:
-        rb_raise(rb_eTypeError, "String or Fixnum expected");
-        break;
-    }
-    return Qnil;
-  }
-#else
-  Data_Get_Struct(self, struct newtComponent_struct, co);
-
-  switch(TYPE(data)) {
-    case T_STRING:
-      newtCheckboxTreeAddItem(co, StringValuePtr(text), (void *)StringValuePtr(data), NUM2INT(flags), NEWT_ARG_APPEND, NEWT_ARG_LAST);
-      break;
-    case T_FIXNUM:
-      newtCheckboxTreeAddItem(co, StringValuePtr(text), (void *)NUM2INT(data), NUM2INT(flags), NEWT_ARG_APPEND, NEWT_ARG_LAST);
-      break;
-    default:
-      rb_raise(rb_eTypeError, "String or Fixnum expected");
-      break;
-  }
+  text = StringValuePtr(RARRAY_PTR(args)[0]);
+  data = RARRAY_PTR(args)[1];
+  flags = NUM2INT(RARRAY_PTR(args)[2]);
+  Data_Attach(self, data);
+  newtCheckboxTreeAddArray(co, text, (void *) data, flags, indexes);
   return Qnil;
-#endif
 }
 
-static VALUE rb_ext_CheckboxTreeMulti_new(VALUE self, VALUE left, VALUE top, VALUE height, VALUE seq, VALUE flags)
+static VALUE rb_ext_CheckboxTree_GetSelection(VALUE self)
+{
+  newtComponent co;
+  VALUE *data;
+  int numitems;
+
+  Get_newtComponent(self, co);
+  data = (VALUE *) newtCheckboxTreeGetSelection(co, &numitems);
+  return checkboxtree_collect_selection(numitems, data);
+}
+
+static VALUE rb_ext_CheckboxTree_GetCurrent(VALUE self)
 {
   newtComponent co;
 
-  if (NIL_P(seq) || !RSTRING_LEN(seq)) {
-    co = newtCheckboxTreeMulti(NUM2INT(left), NUM2INT(top), NUM2INT(height), NULL, NUM2INT(flags));
-  } else {
-    co = newtCheckboxTreeMulti(NUM2INT(left), NUM2INT(top), NUM2INT(height), StringValuePtr(seq), NUM2INT(flags));
+  Get_newtComponent(self, co);
+  return (VALUE) newtCheckboxTreeGetCurrent(co);
+}
+
+static VALUE rb_ext_CheckboxTree_SetCurrent(VALUE self, VALUE data)
+{
+  newtComponent co;
+
+  Get_newtComponent(self, co);
+  newtCheckboxTreeSetCurrent(co, (void *) data);
+  return Qnil;
+}
+
+static VALUE rb_ext_CheckboxTree_FindItem(VALUE self, VALUE data)
+{
+  newtComponent co;
+  int *path;
+  VALUE ary;
+  int i;
+
+  ary = Qnil;
+  Get_newtComponent(self, co);
+  path = newtCheckboxTreeFindItem(co, (void *) data);
+  if (path != NULL) {
+    ary = rb_ary_new();
+    for (i = 0; path[i] != NEWT_ARG_LAST; i++)
+      rb_ary_push(ary, INT2NUM(path[i]));
   }
-  return Data_Wrap_Struct(self, 0, 0, co);
+  return ary;
 }
 
-static VALUE rb_ext_Textbox_new(VALUE self, VALUE left, VALUE top, VALUE width, VALUE height, VALUE flags)
+static VALUE rb_ext_CheckboxTree_SetEntry(VALUE self, VALUE data, VALUE text)
 {
   newtComponent co;
 
-  co = newtTextbox(NUM2INT(left), NUM2INT(top), NUM2INT(width), NUM2INT(height), NUM2INT(flags));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  Get_newtComponent(self, co);
+  newtCheckboxTreeSetEntry(co, (void *) data, StringValuePtr(text));
+  return Qnil;
+}
+
+static VALUE rb_ext_CheckboxTree_SetWidth(VALUE self, VALUE width)
+{
+  newtComponent co;
+
+  Get_newtComponent(self, co);
+  newtCheckboxTreeSetWidth(co, NUM2INT(width));
+  return Qnil;
+}
+
+static VALUE rb_ext_CheckboxTree_GetEntryValue(VALUE self, VALUE data)
+{
+  newtComponent co;
+  char value[2];
+
+  Get_newtComponent(self, co);
+  value[0] = newtCheckboxTreeGetEntryValue(co, (void *) data);
+  value[1] = '\0';
+  return (value[0] == -1) ? Qnil : rb_str_new_cstr(value);
+}
+
+static VALUE rb_ext_CheckboxTree_SetEntryValue(VALUE self, VALUE data, VALUE value) {
+  newtComponent co;
+
+  Get_newtComponent(self, co);
+  newtCheckboxTreeSetEntryValue(co, (void *) data, StringValueCStr(value)[0]);
+  return Qnil;
+}
+
+static VALUE rb_ext_CheckboxTreeMulti_new(int argc, VALUE *argv, VALUE self)
+{
+  newtComponent co;
+  char *seq;
+  int flags;
+
+  if (argc < 3 || argc > 5)
+    ARG_ERROR(argc, "3..5");
+
+  seq = NULL;
+  if (argc >= 4 && !NIL_P(argv[3]) && RSTRING_LEN(argv[3]))
+    seq = StringValuePtr(argv[3]);
+
+  flags = (argc == 5) ? NUM2INT(argv[4]) : 0;
+  co = newtCheckboxTreeMulti(NUM2INT(argv[0]), NUM2INT(argv[1]), NUM2INT(argv[2]), seq, flags);
+  return Make_Widget(self, co);
+}
+
+static VALUE rb_ext_CheckboxTreeMulti_GetSelection(VALUE self, VALUE seqnum)
+{
+  newtComponent co;
+  VALUE *data;
+  int numitems;
+
+  Get_newtComponent(self, co);
+  data = (VALUE *) newtCheckboxTreeGetMultiSelection(co, &numitems, StringValuePtr(seqnum)[0]);
+  return checkboxtree_collect_selection(numitems, data);
+}
+
+static VALUE rb_ext_Textbox_new(int argc, VALUE *argv, VALUE self)
+{
+  newtComponent co;
+  int flags;
+
+  if (argc < 4 || argc > 5)
+    ARG_ERROR(argc, "4..5");
+
+  flags = (argc == 5) ? NUM2INT(argv[4]) : 0;
+  co = newtTextbox(NUM2INT(argv[0]), NUM2INT(argv[1]), NUM2INT(argv[2]), NUM2INT(argv[3]), flags);
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Textbox_SetText(VALUE self, VALUE text)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   newtTextboxSetText(co, StringValuePtr(text));
   return Qnil;
 }
@@ -1066,7 +1259,7 @@ static VALUE rb_ext_Textbox_SetHeight(VALUE self, VALUE height)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   newtTextboxSetHeight(co, NUM2INT(height));
   return Qnil;
 }
@@ -1075,7 +1268,7 @@ static VALUE rb_ext_Textbox_GetNumLines(VALUE self)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   return INT2NUM(newtTextboxGetNumLines(co));
 }
 
@@ -1083,71 +1276,87 @@ static VALUE rb_ext_Textbox_SetColors(VALUE self, VALUE normal, VALUE active)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   newtTextboxSetColors(co, NUM2INT(normal), NUM2INT(active));
   return Qnil;
 }
 
-static VALUE rb_ext_TextboxReflowed_new(VALUE self, VALUE left, VALUE top, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp, VALUE flags)
+static VALUE rb_ext_TextboxReflowed_new(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
+  int flags;
 
-  co = newtTextboxReflowed(NUM2INT(left), NUM2INT(top), StringValuePtr(text), NUM2INT(width),
-      NUM2INT(flexDown), NUM2INT(flexUp), NUM2INT(flags));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  if (argc < 6 || argc > 7)
+    ARG_ERROR(argc, "6..7");
+
+  flags = (argc == 7) ? NUM2INT(argv[6]) : 0;
+  co = newtTextboxReflowed(NUM2INT(argv[0]), NUM2INT(argv[1]),
+                           StringValuePtr(argv[2]), NUM2INT(argv[3]),
+                           NUM2INT(argv[4]), NUM2INT(argv[5]), flags);
+
+  return Make_Widget(self, co);
 }
 
-static void rb_ext_Form_Destroy(VALUE self)
-{
-  newtComponent form;
-
-  if (self) {
-    Data_Get_Struct(self, struct newtComponent_struct, form);
-    newtFormDestroy(form);
-  }
-}
-
-static VALUE rb_ext_Form_new(VALUE self, VALUE left, VALUE top, VALUE text)
+static VALUE rb_ext_Form_new(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
+  VALUE helpTag;
+  int flags = 0;
 
-  co = newtForm(NULL, NULL, 0);
-  return Data_Wrap_Struct(self, 0, 0, co);
-  //return Data_Wrap_Struct(self, 0, rb_ext_Form_Destroy, co);
+  if (argc > 3)
+    ARG_ERROR(argc, "0..3");
+
+  helpTag = (argc >= 2) ? argv[1] : Qnil;
+  flags = (argc == 3) ? NUM2INT(argv[2]) : 0;
+
+  /* Can't determine how Form scrollbars work, so just pass NULL. */
+  co = newtForm(NULL, (void *) helpTag, flags);
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Form_SetBackground(VALUE self, VALUE color)
 {
   newtComponent form;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
+  Get_newtComponent(self, form);
   newtFormSetBackground(form, NUM2INT(color));
   return Qnil;
 }
 
-#if 0
-static VALUE rb_ext_Form_AddComponent(VALUE self, VALUE co)
+static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE components)
 {
-  newtComponent form, cco;
+  Widget_data *form, *co;
+  VALUE str;
+  int i;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
-  Data_Get_Struct(co, struct newtComponent_struct, cco);
-  newtFormAddComponent(form, cco);
+  Get_Widget_Data(self, form);
+  if (RARRAY_LEN(components) > 0 && (void *) form->components == NULL) {
+    form->components = rb_ary_new();
+    rb_gc_register_address(&form->components);
+  }
+
+  for (i = 0; i < RARRAY_LEN(components); i++) {
+    Get_Widget_Data(RARRAY_PTR(components)[i], co);
+    if (co->flags & FLAG_ADDED_TO_FORM) {
+      str = rb_inspect(RARRAY_PTR(components)[i]);
+      rb_raise(rb_eRuntimeError, "%s is already added to a Form",
+               StringValuePtr(str));
+    }
+
+    co->flags ^= FLAG_GC_FREE;
+    co->flags |= FLAG_ADDED_TO_FORM;
+    rb_ary_push(form->components, RARRAY_PTR(components)[i]);
+    newtFormAddComponent(form->co, co->co);
+  }
   return Qnil;
 }
-#endif
 
-static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE co)
+static VALUE rb_ext_Form_SetSize(VALUE self)
 {
-  int i;
-  newtComponent form, cco;
+  newtComponent form;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
-
-  for (i = 0; i < RARRAY_LEN(co); i++) {
-    Data_Get_Struct(RARRAY_PTR(co)[i], struct newtComponent_struct, cco);
-    newtFormAddComponent(form, cco);
-  }
+  Get_newtComponent(self, form);
+  newtFormSetSize(form);
   return Qnil;
 }
 
@@ -1155,17 +1364,26 @@ static VALUE rb_ext_Form_SetCurrent(VALUE self, VALUE obj)
 {
   newtComponent form, co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
-  Data_Get_Struct(obj,  struct newtComponent_struct, co);
+  Get_newtComponent(self, form);
+  Get_newtComponent(obj, co);
   newtFormSetCurrent(form, co);
   return Qnil;
+}
+
+static VALUE rb_ext_Form_GetCurrent(VALUE self)
+{
+  newtComponent form, co;
+
+  Get_newtComponent(self, form);
+  co = newtFormGetCurrent(form);
+  return Make_Widget_Ref(cWidget, co);
 }
 
 static VALUE rb_ext_Form_SetHeight(VALUE self, VALUE height)
 {
   newtComponent form;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
+  Get_newtComponent(self, form);
   newtFormSetHeight(form, NUM2INT(height));
   return Qnil;
 }
@@ -1174,7 +1392,7 @@ static VALUE rb_ext_Form_SetWidth(VALUE self, VALUE width)
 {
   newtComponent form;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
+  Get_newtComponent(self, form);
   newtFormSetWidth(form, NUM2INT(width));
   return Qnil;
 }
@@ -1184,7 +1402,7 @@ static VALUE rb_ext_Form_Run(VALUE self)
   newtComponent form;
   struct newtExitStruct *es;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
+  Get_newtComponent(self, form);
   es = ALLOC(struct newtExitStruct);
   newtFormRun(form, es);
   return Data_Wrap_Struct(cExitStruct, 0, xfree, es);
@@ -1194,7 +1412,7 @@ static VALUE rb_ext_Form_DrawForm(VALUE self)
 {
   newtComponent form;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
+  Get_newtComponent(self, form);
   newtDrawForm(form);
   return Qnil;
 }
@@ -1203,25 +1421,54 @@ static VALUE rb_ext_Form_AddHotKey(VALUE self, VALUE key)
 {
   newtComponent form;
 
-  Data_Get_Struct(self, struct newtComponent_struct, form);
+  Get_newtComponent(self, form);
   newtFormAddHotKey(form, NUM2INT(key));
   return Qnil;
 }
 
-static VALUE rb_ext_Entry_new(VALUE self, VALUE left, VALUE top, VALUE initialValue, VALUE width, VALUE flags)
+static VALUE rb_ext_Form_SetTimer(VALUE self, VALUE millisecs)
+{
+  newtComponent form;
+
+  Get_newtComponent(self, form);
+  newtFormSetTimer(form, NUM2INT(millisecs));
+  return Qnil;
+}
+
+static VALUE rb_ext_Form_WatchFd(VALUE self, VALUE io, VALUE flags)
+{
+  newtComponent form;
+  int fd;
+
+  if (!rb_obj_is_kind_of(io, rb_cIO) && TYPE(io) != T_FIXNUM)
+    rb_raise(rb_eTypeError, "neither IO nor file descriptor");
+
+  Get_newtComponent(self, form);
+  fd = NUM2INT(rb_funcall(io, rb_intern("fileno"), 0));
+  newtFormWatchFd(form, fd, NUM2INT(flags));
+  return Qnil;
+}
+
+static VALUE rb_ext_Entry_new(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
+  int flags;
 
-  co = newtEntry(NUM2INT(left), NUM2INT(top), StringValuePtr(initialValue), NUM2INT(width),
-      NULL, NUM2INT(flags));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  if (argc < 4 || argc > 5)
+    ARG_ERROR(argc, "4..5");
+
+  flags = (argc == 5) ? NUM2INT(argv[4]) : 0;
+  co = newtEntry(NUM2INT(argv[0]), NUM2INT(argv[1]), StringValuePtr(argv[2]),
+                 NUM2INT(argv[3]), NULL, flags);
+
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Entry_Set(VALUE self, VALUE value, VALUE cursorAtEnd)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   switch(TYPE(cursorAtEnd)) {
     case T_TRUE:
       newtEntrySet(co, StringValuePtr(value), 1);
@@ -1236,7 +1483,6 @@ static VALUE rb_ext_Entry_Set(VALUE self, VALUE value, VALUE cursorAtEnd)
       rb_raise(rb_eTypeError, "Boolean or Fixnum expected");
       break;
   }
-
   return Qnil;
 }
 
@@ -1244,25 +1490,67 @@ static VALUE rb_ext_Entry_GetValue(VALUE self)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   return rb_str_new2(newtEntryGetValue(co));
 }
 
-static VALUE rb_ext_Entry_SetFlags(VALUE self, VALUE args)
+static VALUE rb_ext_Entry_SetFilter(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
-  long len;
+  VALUE cb, data = Qnil;
 
-  len = RARRAY_LEN(args);
-  if (len == 1) {
-    Data_Get_Struct(self, struct newtComponent_struct, co);
-    newtEntrySetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NEWT_FLAGS_SET);
-  } else if (len == 2) {
-    Data_Get_Struct(self, struct newtComponent_struct, co);
-    newtEntrySetFlags(co, NUM2INT(RARRAY_PTR(args)[0]), NUM2INT(RARRAY_PTR(args)[1]));
-  } else {
-    rb_raise(rb_eArgError, "1 argument or 2 arguments required");
-  }
+  if (argc < 1 || argc > 2)
+    ARG_ERROR(argc, "1 or 2");
+
+  if (argc == 2)
+    data = argv[1];
+
+  Get_newtComponent(self, co);
+  cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
+  rb_ivar_set(self, IVAR_FILTER_CALLBACK, cb);
+  newtEntrySetFilter(co, rb_ext_Entry_filter_function, (void *) cb);
+  return Qnil;
+}
+
+static VALUE rb_ext_Entry_SetFlags(int argc, VALUE *argv, VALUE self)
+{
+  newtComponent co;
+  int sense = NEWT_FLAGS_SET;
+
+  if (argc < 1 || argc > 2)
+    ARG_ERROR(argc, "1..2");
+
+  if (argc == 2)
+    sense = NUM2INT(argv[1]);
+
+  Get_newtComponent(self, co);
+  newtEntrySetFlags(co, NUM2INT(argv[0]), sense);
+  return Qnil;
+}
+
+static VALUE rb_ext_Entry_SetColors(VALUE self, VALUE normal, VALUE disabled)
+{
+  newtComponent co;
+
+  Get_newtComponent(self, co);
+  newtEntrySetColors(co, NUM2INT(normal), NUM2INT(disabled));
+  return Qnil;
+}
+
+static VALUE rb_ext_Entry_GetCursorPosition(VALUE self)
+{
+  newtComponent co;
+
+  Get_newtComponent(self, co);
+  return INT2NUM(newtEntryGetCursorPosition(co));
+}
+
+static VALUE rb_ext_Entry_SetCursorPosition(VALUE self, VALUE position)
+{
+  newtComponent co;
+
+  Get_newtComponent(self, co);
+  newtEntrySetCursorPosition(co, NUM2INT(position));
   return Qnil;
 }
 
@@ -1271,88 +1559,106 @@ static VALUE rb_ext_Scale_new(VALUE self, VALUE left, VALUE top, VALUE width, VA
   newtComponent co;
 
   co = newtScale(NUM2INT(left), NUM2INT(top), NUM2INT(width), NUM2INT(fullValue));
-  return Data_Wrap_Struct(self, 0, 0, co);
+  return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Scale_Set(VALUE self, VALUE amount)
 {
   newtComponent co;
 
-  Data_Get_Struct(self, struct newtComponent_struct, co);
+  Get_newtComponent(self, co);
   newtScaleSet(co, NUM2INT(amount));
   return Qnil;
 }
 
-static void rb_ext_Grid_Destroy(VALUE self)
+static VALUE rb_ext_Scale_SetColors(VALUE self, VALUE empty, VALUE full)
 {
-  newtGrid grid;
+  newtComponent co;
 
-  if (self) {
-    Data_Get_Struct(cGrid, struct grid_s, grid);
-    newtGridFree(grid, 1);
-  }
+  Get_newtComponent(self, co);
+  newtScaleSetColors(co, NUM2INT(empty), NUM2INT(full));
+  return Qnil;
 }
 
 static VALUE rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
 {
   newtGrid grid;
+  VALUE widget;
+  int num_cols, num_rows;
 
-  grid = newtCreateGrid(NUM2INT(cols), NUM2INT(rows));
-  return Data_Wrap_Struct(self, 0, 0, grid);
-  //return Data_Wrap_Struct(self, 0, rb_ext_Grid_Destroy, grid);
+  num_cols = NUM2INT(cols);
+  num_rows = NUM2INT(rows);
+
+  if (num_cols <= 0 || num_rows <= 0)
+    rb_raise(rb_eRuntimeError, "specified number of columns or rows should be greater than 0");
+
+  grid = newtCreateGrid(num_cols, num_rows);
+  widget = Data_Wrap_Struct(self, 0, 0, grid);
+  rb_ivar_set(widget, IVAR_COLS, cols);
+  rb_ivar_set(widget, IVAR_ROWS, rows);
+  return widget;
 }
 
 static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, VALUE val,
-    VALUE padLeft, VALUE padTop, VALUE padRight, VALUE padBottom,
-    VALUE anchor, VALUE flags)
+    VALUE padLeft, VALUE padTop, VALUE padRight, VALUE padBottom, VALUE anchor, VALUE flags)
 {
   newtGrid grid;
-  newtComponent co;
+  void *co;
+  int icol, irow, itype, cols, rows;
+
+  icol = NUM2INT(col);
+  irow = NUM2INT(row);
+  itype = NUM2INT(type);
+
+  cols = NUM2INT(rb_ivar_get(self, IVAR_COLS));
+  rows = NUM2INT(rb_ivar_get(self, IVAR_ROWS));
+  if (icol >= cols || irow >= rows)
+    rb_raise(rb_eRuntimeError, "attempting to set a field at an invalid position (%d, %d)", icol, irow);
+
+  if (itype == NEWT_GRID_SUBGRID)
+    Data_Get_Struct(val, struct grid_s, co);
+  else
+    Get_newtComponent(val, co);
 
   Data_Get_Struct(self, struct grid_s, grid);
-  Data_Get_Struct(val, struct newtComponent_struct, co);
-  newtGridSetField(grid, NUM2INT(col), NUM2INT(row), NUM2INT(type), co,
-      NUM2INT(padLeft), NUM2INT(padTop), NUM2INT(padRight), NUM2INT(padBottom),
-      NUM2INT(anchor), NUM2INT(flags));
+  newtGridSetField(grid, icol, irow, itype, co, NUM2INT(padLeft),
+                   NUM2INT(padTop), NUM2INT(padRight), NUM2INT(padBottom),
+                   NUM2INT(anchor), NUM2INT(flags));
+
   return Qnil;
 }
 
-static VALUE rb_ext_Grid_WrappedWindow(VALUE self, VALUE args)
+static VALUE rb_ext_Grid_WrappedWindow(int argc, VALUE *argv, VALUE self)
 {
   newtGrid grid;
-  long len;
+  char *title;
 
-  len = RARRAY_LEN(args);
-  if (len == 1) {
-    Data_Get_Struct(self, struct grid_s, grid);
-    newtGridWrappedWindow(grid, StringValuePtr(RARRAY_PTR(args)[0]));
-  } else if (len == 3) {
-    Data_Get_Struct(self, struct grid_s, grid);
-    newtGridWrappedWindowAt(grid, StringValuePtr(RARRAY_PTR(args)[0]),
-        NUM2INT(StringValuePtr(RARRAY_PTR(args)[1])), NUM2INT(StringValuePtr(RARRAY_PTR(args)[2])));
-  } else {
-    rb_raise(rb_eArgError, "1 argument or 3 arguments required");
+  if (argc != 1 && argc != 3)
+    ARG_ERROR(argc, "1 or 3");
+
+  title = StringValuePtr(argv[0]);
+  Data_Get_Struct(self, struct grid_s, grid);
+  if (argc == 1) {
+    newtGridWrappedWindow(grid, title);
+  } else if (argc == 3) {
+    newtGridWrappedWindowAt(grid, title, NUM2INT(argv[1]), NUM2INT(argv[2]));
   }
-
   return Qnil;
 }
 
 static VALUE rb_ext_Grid_GetSize(VALUE self)
 {
-  int width, height;
   newtGrid grid;
-  VALUE ary = rb_ary_new2(2);
+  int width, height;
 
   Data_Get_Struct(self, struct grid_s, grid);
   newtGridGetSize(grid, &width, &height);
-  rb_ary_push(ary, INT2NUM(width));
-  rb_ary_push(ary, INT2NUM(height));
-
-  return ary;
+  return rb_ary_new_from_args(2, INT2NUM(width), INT2NUM(height));
 }
 
 void Init_ruby_newt(){
   mNewt = rb_define_module("Newt");
+  rb_define_module_function(mNewt, "delay", rb_ext_Delay, 1);
   rb_define_module_function(mNewt, "reflow_text", rb_ext_ReflowText, 4);
 
   mScreen = rb_define_class_under(mNewt, "Screen", rb_cObject);
@@ -1370,24 +1676,28 @@ void Init_ruby_newt(){
   rb_define_module_function(mScreen, "refresh", rb_ext_Screen_Refresh, 0);
   rb_define_module_function(mScreen, "suspend", rb_ext_Screen_Suspend, 0);
   rb_define_module_function(mScreen, "resume", rb_ext_Screen_Resume, 0);
+  rb_define_module_function(mScreen, "suspend_callback", rb_ext_Screen_SuspendCallback, -1);
+  rb_define_module_function(mScreen, "help_callback", rb_ext_Screen_HelpCallback, 1);
   rb_define_module_function(mScreen, "push_helpline", rb_ext_Screen_PushHelpLine, 1);
   rb_define_module_function(mScreen, "redraw_helpline", rb_ext_Screen_RedrawHelpLine, 0);
   rb_define_module_function(mScreen, "pop_helpline", rb_ext_Screen_PopHelpLine, 0);
   rb_define_module_function(mScreen, "draw_roottext", rb_ext_Screen_DrawRootText, 3);
   rb_define_module_function(mScreen, "bell", rb_ext_Screen_Bell, 0);
+  rb_define_module_function(mScreen, "cursor_off", rb_ext_Screen_CursorOff, 0);
+  rb_define_module_function(mScreen, "cursor_on", rb_ext_Screen_CursorOn, 0);
   rb_define_module_function(mScreen, "size", rb_ext_Screen_Size, 0);
-  rb_define_module_function(mScreen, "win_message", rb_ext_Screen_WinMessage, -2);
-  rb_define_module_function(mScreen, "win_choice", rb_ext_Screen_WinChoice, -2);
+  rb_define_module_function(mScreen, "win_message", rb_ext_Screen_WinMessage, 3);
+  rb_define_module_function(mScreen, "win_choice", rb_ext_Screen_WinChoice, 4);
   rb_define_module_function(mScreen, "win_menu", rb_ext_Screen_WinMenu, -2);
   rb_define_module_function(mScreen, "win_entries", rb_ext_Screen_WinEntries, -2);
 
-  rb_ext_Widget_CALLBACK_HASH = rb_hash_new();
-  rb_define_const(mNewt, "CALLBACK_HASH", rb_ext_Widget_CALLBACK_HASH);
-  rb_call_id = rb_intern("call");
+  rb_ext_sCallback = rb_struct_define(NULL, "widget", "context", "callback", "data", NULL);
 
   cWidget = rb_define_class_under(mNewt, "Widget", rb_cObject);
   rb_define_method(cWidget, "callback", rb_ext_Widget_callback, -1);
-  rb_define_method(cWidget, "takesFocus", rb_ext_Widget_takesFocus, 1);
+  rb_define_method(cWidget, "takes_focus", rb_ext_Widget_takesFocus, 1);
+  rb_define_method(cWidget, "get_position", rb_ext_Widget_GetPosition, 0);
+  rb_define_method(cWidget, "get_size", rb_ext_Widget_GetSize, 0);
   rb_define_method(cWidget, "==", rb_ext_Widget_equal, 1);
 
   cCompactButton = rb_define_class_under(mNewt, "CompactButton", cWidget);
@@ -1400,12 +1710,12 @@ void Init_ruby_newt(){
   rb_define_singleton_method(cCheckbox, "new", rb_ext_Checkbox_new, -1);
   rb_define_method(cCheckbox, "get", rb_ext_Checkbox_GetValue, 0);
   rb_define_method(cCheckbox, "set", rb_ext_Checkbox_SetValue, 1);
-  rb_define_method(cCheckbox, "set_flags", rb_ext_Checkbox_SetFlags, -2);
+  rb_define_method(cCheckbox, "set_flags", rb_ext_Checkbox_SetFlags, -1);
 
   cRadioButton = rb_define_class_under(mNewt, "RadioButton", cWidget);
-  rb_define_singleton_method(cRadioButton, "new", rb_ext_RadioButton_new, 5);
-  rb_define_method(cRadioButton, "get", rb_ext_Checkbox_GetValue, 0);
-  rb_define_method(cRadioButton, "set", rb_ext_Checkbox_SetValue, 1);
+  rb_define_singleton_method(cRadioButton, "new", rb_ext_RadioButton_new, -1);
+  rb_define_method(cRadioButton, "get_current", rb_ext_RadioButton_GetCurrent, 0);
+  rb_define_method(cRadioButton, "set_current", rb_ext_RadioButton_SetCurrent, 0);
 
   cLabel = rb_define_class_under(mNewt, "Label", cWidget);
   rb_define_singleton_method(cLabel, "new", rb_ext_Label_new, 3);
@@ -1413,78 +1723,92 @@ void Init_ruby_newt(){
   rb_define_method(cLabel, "set_colors", rb_ext_Label_SetColors, 1);
 
   cListbox = rb_define_class_under(mNewt, "Listbox", cWidget);
-  rb_define_singleton_method(cListbox, "new", rb_ext_Listbox_new, 4);
-  rb_define_method(cListbox, "get_current", rb_ext_Listbox_GetCurrentAsNumber, 0);
-  rb_define_method(cListbox, "get_current_as_number", rb_ext_Listbox_GetCurrentAsNumber, 0);
-  rb_define_method(cListbox, "get_current_as_string", rb_ext_Listbox_GetCurrentAsString, 0);
+  rb_define_singleton_method(cListbox, "new", rb_ext_Listbox_new, -1);
+  rb_define_method(cListbox, "get_current", rb_ext_Listbox_GetCurrent, 0);
   rb_define_method(cListbox, "set_current", rb_ext_Listbox_SetCurrent, 1);
-  rb_define_method(cListbox, "setCurrentByKey", rb_ext_Listbox_SetCurrentByKey, 1);
+  rb_define_method(cListbox, "set_current_by_key", rb_ext_Listbox_SetCurrentByKey, 1);
   rb_define_method(cListbox, "set_width", rb_ext_Listbox_SetWidth, 1);
-  rb_define_method(cListbox, "setData", rb_ext_Listbox_SetData, 2);
+  rb_define_method(cListbox, "set_data", rb_ext_Listbox_SetData, 2);
   rb_define_method(cListbox, "append", rb_ext_Listbox_AppendEntry, 2);
   rb_define_method(cListbox, "insert", rb_ext_Listbox_InsertEntry, 3);
+  rb_define_method(cListbox, "get", rb_ext_Listbox_GetEntry, 1);
   rb_define_method(cListbox, "set", rb_ext_Listbox_SetEntry, 2);
   rb_define_method(cListbox, "delete", rb_ext_Listbox_DeleteEntry, 1);
   rb_define_method(cListbox, "clear", rb_ext_Listbox_Clear, 0);
-  rb_define_method(cListbox, "clearSelection", rb_ext_Listbox_ClearSelection, 0);
+  rb_define_method(cListbox, "get_selection", rb_ext_Listbox_GetSelection, 0);
+  rb_define_method(cListbox, "clear_selection", rb_ext_Listbox_ClearSelection, 0);
   rb_define_method(cListbox, "select", rb_ext_Listbox_SelectItem, 2);
+  rb_define_method(cListbox, "item_count", rb_ext_Listbox_ItemCount, 0);
 
   cCheckboxTree = rb_define_class_under(mNewt, "CheckboxTree", cWidget);
-  rb_define_singleton_method(cCheckboxTree, "new", rb_ext_CheckboxTree_new, 4);
-  /*rb_define_method(cCheckboxTree, "addItem", rb_ext_CheckboxTree_AddItem, 3);*/
+  rb_define_singleton_method(cCheckboxTree, "new", rb_ext_CheckboxTree_new, -1);
   rb_define_method(cCheckboxTree, "add", rb_ext_CheckboxTree_AddItem, -2);
+  rb_define_method(cCheckboxTree, "get_selection", rb_ext_CheckboxTree_GetSelection, 0);
+  rb_define_method(cCheckboxTree, "get_current", rb_ext_CheckboxTree_GetCurrent, 0);
+  rb_define_method(cCheckboxTree, "set_current", rb_ext_CheckboxTree_SetCurrent, 1);
+  rb_define_method(cCheckboxTree, "find", rb_ext_CheckboxTree_FindItem, 1);
+  rb_define_method(cCheckboxTree, "set_entry", rb_ext_CheckboxTree_SetEntry, 2);
+  rb_define_method(cCheckboxTree, "set_width", rb_ext_CheckboxTree_SetWidth, 1);
+  rb_define_method(cCheckboxTree, "get", rb_ext_CheckboxTree_GetEntryValue, 1);
+  rb_define_method(cCheckboxTree, "set", rb_ext_CheckboxTree_SetEntryValue, 2);
 
   cCheckboxTreeMulti = rb_define_class_under(mNewt, "CheckboxTreeMulti", cCheckboxTree);
-  rb_define_singleton_method(cCheckboxTreeMulti, "new", rb_ext_CheckboxTreeMulti_new, 5);
+  rb_define_singleton_method(cCheckboxTreeMulti, "new", rb_ext_CheckboxTreeMulti_new, -1);
+  rb_define_method(cCheckboxTreeMulti, "get_selection", rb_ext_CheckboxTreeMulti_GetSelection, 1);
 
   cTextbox = rb_define_class_under(mNewt, "Textbox", cWidget);
-  rb_define_singleton_method(cTextbox, "new", rb_ext_Textbox_new, 5);
+  rb_define_singleton_method(cTextbox, "new", rb_ext_Textbox_new, -1);
   rb_define_method(cTextbox, "set_text", rb_ext_Textbox_SetText, 1);
   rb_define_method(cTextbox, "set_height", rb_ext_Textbox_SetHeight, 1);
   rb_define_method(cTextbox, "get_num_lines", rb_ext_Textbox_GetNumLines, 0);
   rb_define_method(cTextbox, "set_colors", rb_ext_Textbox_SetColors, 2);
 
-  cTextboxReflowed = rb_define_class_under(mNewt, "TextboxReflowed", cWidget);
-  rb_define_singleton_method(cTextboxReflowed, "new", rb_ext_TextboxReflowed_new, 7);
+  cTextboxReflowed = rb_define_class_under(mNewt, "TextboxReflowed", cTextbox);
+  rb_define_singleton_method(cTextboxReflowed, "new", rb_ext_TextboxReflowed_new, -1);
 
   cForm = rb_define_class_under(mNewt, "Form", cWidget);
-  rb_define_singleton_method(cForm, "new", rb_ext_Form_new, 0);
-  /*rb_define_method(cForm, "setSize", rb_ext_Form_SetSize, 0);*/
-  /*rb_define_method(cForm, "destroy", rb_ext_Form_Destroy, 0);*/
+  rb_define_singleton_method(cForm, "new", rb_ext_Form_new, -1);
   rb_define_method(cForm, "set_background", rb_ext_Form_SetBackground, 1);
-  /*rb_define_method(cForm, "addComponent", rb_ext_Form_AddComponent, 1);*/
   rb_define_method(cForm, "add", rb_ext_Form_AddComponents, -2);
+  rb_define_method(cForm, "set_size", rb_ext_Form_SetSize, 0);
+  rb_define_method(cForm, "get_current", rb_ext_Form_GetCurrent, 0);
   rb_define_method(cForm, "set_current", rb_ext_Form_SetCurrent, 1);
   rb_define_method(cForm, "set_height", rb_ext_Form_SetHeight, 1);
   rb_define_method(cForm, "set_width", rb_ext_Form_SetWidth, 1);
   rb_define_method(cForm, "run", rb_ext_Form_Run, 0);
   rb_define_method(cForm, "draw", rb_ext_Form_DrawForm, 0);
   rb_define_method(cForm, "add_hotkey", rb_ext_Form_AddHotKey, 1);
+  rb_define_method(cForm, "set_timer", rb_ext_Form_SetTimer, 1);
+  rb_define_method(cForm, "watch_fd", rb_ext_Form_WatchFd, 2);
 
   cExitStruct = rb_define_class_under(cForm, "ExitStruct", rb_cObject);
   rb_define_private_method(rb_singleton_class(cExitStruct), "new", NULL, 0);
   rb_define_method(cExitStruct, "reason", rb_ext_ExitStruct_reason, 0);
+  rb_define_method(cExitStruct, "watch", rb_ext_ExitStruct_watch, 0);
   rb_define_method(cExitStruct, "key", rb_ext_ExitStruct_key, 0);
   rb_define_method(cExitStruct, "component", rb_ext_ExitStruct_component, 0);
   rb_define_method(cExitStruct, "==", rb_ext_ExitStruct_equal, 1);
   rb_define_method(cExitStruct, "inspect", rb_ext_ExitStruct_inspect, 0);
 
   cEntry = rb_define_class_under(mNewt, "Entry", cWidget);
-  rb_define_singleton_method(cEntry, "new", rb_ext_Entry_new, 5);
+  rb_define_singleton_method(cEntry, "new", rb_ext_Entry_new, -1);
   rb_define_method(cEntry, "set", rb_ext_Entry_Set, 2);
   rb_define_method(cEntry, "get", rb_ext_Entry_GetValue, 0);
-  rb_define_method(cEntry, "set_flags", rb_ext_Entry_SetFlags, -2);
+  rb_define_method(cEntry, "set_filter", rb_ext_Entry_SetFilter, -1);
+  rb_define_method(cEntry, "set_flags", rb_ext_Entry_SetFlags, -1);
+  rb_define_method(cEntry, "set_colors", rb_ext_Entry_SetColors, 2);
+  rb_define_method(cEntry, "get_cursor_position", rb_ext_Entry_GetCursorPosition, 0);
+  rb_define_method(cEntry, "set_cursor_position", rb_ext_Entry_SetCursorPosition, 1);
 
   cScale = rb_define_class_under(mNewt, "Scale", cWidget);
   rb_define_singleton_method(cScale, "new", rb_ext_Scale_new, 4);
   rb_define_method(cScale, "set", rb_ext_Scale_Set, 1);
-
+  rb_define_method(cScale, "set_colors", rb_ext_Scale_SetColors, 2);
 
   cGrid = rb_define_class_under(mNewt, "Grid", cWidget);
   rb_define_singleton_method(cGrid, "new", rb_ext_Grid_new, 2);
-  /*rb_define_method(cGrid, "destroy", rb_ext_Grid_Destroy, 0);*/
   rb_define_method(cGrid, "set_field", rb_ext_Grid_SetField, 10);
-  rb_define_method(cGrid, "wrapped_window", rb_ext_Grid_WrappedWindow, -2);
+  rb_define_method(cGrid, "wrapped_window", rb_ext_Grid_WrappedWindow, -1);
   rb_define_method(cGrid, "get_size", rb_ext_Grid_GetSize, 0);
 
   rb_define_const(mNewt, "COLORSET_ROOT", INT2FIX(NEWT_COLORSET_ROOT));
@@ -1531,6 +1855,10 @@ void Init_ruby_newt(){
   rb_define_const(mNewt, "FLAG_PASSWORD", INT2FIX(NEWT_FLAG_PASSWORD));
   rb_define_const(mNewt, "FLAG_SHOWCURSOR", INT2FIX(NEWT_FLAG_SHOWCURSOR));
 
+  rb_define_const(mNewt, "FD_READ", INT2FIX(NEWT_FD_READ));
+  rb_define_const(mNewt, "FD_WRITE", INT2FIX(NEWT_FD_WRITE));
+  rb_define_const(mNewt, "FD_EXCEPT", INT2FIX(NEWT_FD_EXCEPT));
+
   rb_define_const(mNewt, "ANCHOR_LEFT", INT2FIX(NEWT_ANCHOR_LEFT));
   rb_define_const(mNewt, "ANCHOR_RIGHT", INT2FIX(NEWT_ANCHOR_RIGHT));
   rb_define_const(mNewt, "ANCHOR_TOP", INT2FIX(NEWT_ANCHOR_TOP));
@@ -1541,6 +1869,12 @@ void Init_ruby_newt(){
   rb_define_const(mNewt, "GRID_EMPTY", INT2FIX(NEWT_GRID_EMPTY));
   rb_define_const(mNewt, "GRID_COMPONENT", INT2FIX(NEWT_GRID_COMPONENT));
   rb_define_const(mNewt, "GRID_SUBGRID", INT2FIX(NEWT_GRID_SUBGRID));
+
+  rb_define_const(mNewt, "KEY_TAB", INT2FIX(NEWT_KEY_TAB));
+  rb_define_const(mNewt, "KEY_ENTER", INT2FIX(NEWT_KEY_ENTER));
+  rb_define_const(mNewt, "KEY_SUSPEND", INT2FIX(NEWT_KEY_SUSPEND));
+  rb_define_const(mNewt, "KEY_ESCAPE", INT2FIX(NEWT_KEY_ESCAPE));
+  rb_define_const(mNewt, "KEY_RETURN", INT2FIX(NEWT_KEY_RETURN));
 
   rb_define_const(mNewt, "KEY_UP", INT2FIX(NEWT_KEY_UP));
   rb_define_const(mNewt, "KEY_DOWN", INT2FIX(NEWT_KEY_DOWN));
@@ -1567,6 +1901,9 @@ void Init_ruby_newt(){
   rb_define_const(mNewt, "KEY_F10", INT2FIX(NEWT_KEY_F10));
   rb_define_const(mNewt, "KEY_F11", INT2FIX(NEWT_KEY_F11));
   rb_define_const(mNewt, "KEY_F12", INT2FIX(NEWT_KEY_F12));
+
+  rb_define_const(mNewt, "KEY_RESIZE", INT2FIX(NEWT_KEY_RESIZE));
+  rb_define_const(mNewt, "KEY_ERROR", INT2FIX(NEWT_KEY_ERROR));
 
   rb_define_const(mNewt, "EXIT_HOTKEY", INT2FIX(NEWT_EXIT_HOTKEY));
   rb_define_const(mNewt, "EXIT_COMPONENT", INT2FIX(NEWT_EXIT_COMPONENT));

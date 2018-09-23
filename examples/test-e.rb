@@ -14,21 +14,21 @@ end
 
 Newt::Screen.new
 
-Newt::Screen.draw_roottext(0, 0, 'Newt ¥Æ¥¹¥È¥×¥í¥°¥é¥à')
+Newt::Screen.draw_roottext(0, 0, 'Newt test program')
 Newt::Screen.push_helpline('')
-Newt::Screen.draw_roottext(-50, 0, '¥ë¡¼¥È¥Æ¥­¥¹¥È')
+Newt::Screen.draw_roottext(-50, 0, 'More root text')
 
-Newt::Screen.open_window(2, 2, 30, 10, '£±ÈÖÌÜ¤Î¥¦¥£¥ó¥É¥¦')
-Newt::Screen.open_window(10, 5, 65, 16, '¥¦¥£¥ó¥É¥¦£²')
+Newt::Screen.open_window(2, 2, 30, 10, 'first window')
+Newt::Screen.open_window(10, 5, 65, 16, 'window 2')
 
 f = Newt::Form.new
 chklist = Newt::Form.new
 
-b1 = Newt::Button.new(3, 1, '½ªÎ»')
-b2 = Newt::Button.new(18, 1, '¹¹¿·')
-r1 = Newt::RadioButton.new(20, 10, 'ÁªÂò»è£±', 0, nil)
-r2 = Newt::RadioButton.new(20, 11, 'ÁªÂò»è£²', 1, r1)
-r3 = Newt::RadioButton.new(20, 12, 'ÁªÂò»è£³', 0, r2)
+b1 = Newt::Button.new(3, 1, 'Exit')
+b2 = Newt::Button.new(18, 1, 'Update')
+r1 = Newt::RadioButton.new(20, 10, 'Choice 1', 0, nil)
+r2 = Newt::RadioButton.new(20, 11, 'Chc 2', 1, r1)
+r3 = Newt::RadioButton.new(20, 12, 'Choice 3', 0, r2)
 rsf = Newt::Form.new
 rsf.add(r1, r2, r3)
 rsf.set_background(Newt::COLORSET_CHECKBOX)
@@ -37,16 +37,16 @@ Newt::Screen.refresh
 
 cs = []
 (0...10).each do |i|
-  buf = format('¥Á¥§¥Ã¥¯ %d', i)
-  cs[i] = Newt::Checkbox.new(3, 10 + i, buf, ' ', nil)
+  buf = format('Check %d', i)
+  cs[i] = Newt::Checkbox.new(3, 10 + i, buf)
   chklist.add(cs[i])
 end
 
-l1 = Newt::Label.new(3, 6, '¥¹¥±¡¼¥ë:')
-l2 = Newt::Label.new(3, 7, '¥¹¥¯¥í¡¼¥ë:')
-l3 = Newt::Label.new(3, 8, '¥Ò¥É¥¥¥ó:')
+l1 = Newt::Label.new(3, 6, 'Scale:')
+l2 = Newt::Label.new(3, 7, 'Scrolls:')
+l3 = Newt::Label.new(3, 8, 'Hidden:')
 e1 = Newt::Entry.new(12, 6, '', 20, 0)
-e2 = Newt::Entry.new(12, 7, 'É¸½à', 20, Newt::FLAG_SCROLL)
+e2 = Newt::Entry.new(12, 7, 'Default', 20, Newt::FLAG_SCROLL)
 e3 = Newt::Entry.new(12, 8, '', 20, Newt::FLAG_HIDDEN)
 
 cs[0].callback( proc { disableCallback(cs[0], e1) } )
@@ -59,22 +59,22 @@ f.add(rsf, scale)
 
 lb = Newt::Listbox.new(45, 1, 6, Newt::FLAG_MULTIPLE | Newt::FLAG_BORDER |
                                  Newt::FLAG_SCROLL)
-lb.append('£±ÈÖÌÜ', 1)
-lb.append('£²ÈÖÌÜ', 2)
-lb.append('£³ÈÖÌÜ', 3)
-lb.append('£´ÈÖÌÜ', 4)
-lb.append('£¶ÈÖÌÜ', 6)
-lb.append('£·ÈÖÌÜ', 7)
-lb.append('£¸ÈÖÌÜ', 8)
-lb.append('£¹ÈÖÌÜ', 9)
-lb.append('£±£°ÈÖÌÜ', 10)
+lb.append('First', 1)
+lb.append('Second', 2)
+lb.append('Third', 3)
+lb.append('Fourth', 4)
+lb.append('Sixth', 6)
+lb.append('Seventh', 7)
+lb.append('Eighth', 8)
+lb.append('Ninth', 9)
+lb.append('Tenth', 10)
 
-lb.insert('£µÈÖÌÜ', 5, 4)
-lb.insert('£±£±ÈÖÌÜ', 11, 10)
+lb.insert('Fifth', 5, 4)
+lb.insert('Eleventh', 11, 10)
 lb.delete(11)
 
 t = Newt::Textbox.new(45, 10, 17, 5, Newt::FLAG_WRAP)
-t.set_text('¤³¤ì¤Ï¥Æ¥­¥¹¥È¤Î¥µ¥ó¥×¥ë¤Ç¤¹¡£\nÀµ¾ï¤ËÉ½¼¨¤µ¤ì¤Æ¤¤¤Þ¤¹¤«¡©\n¤³¤ì¤ÏÃ±ÆÈ¹Ô¤Ç¤¹¡£\n¤³¤ì¤ÏÉ½¼¨¤µ¤ì¤Æ¤Ï¤¤¤±¤Þ¤»¤ó')
+t.set_text("This is some text does it look okay?\nThis should be alone.\nThis shouldn't be printed")
 
 f.add(lb, t)
 

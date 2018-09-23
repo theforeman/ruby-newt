@@ -1,12 +1,11 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-require "newt"
+require 'newt'
 
 Newt::Screen.new
 
 Newt::Screen.init
 Newt::Screen.cls
-
 
 Newt::Screen.finish
