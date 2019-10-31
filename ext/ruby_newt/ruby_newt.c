@@ -773,14 +773,14 @@ static VALUE rb_ext_ExitStruct_inspect(VALUE self)
   Data_Get_Struct(self, struct newtExitStruct, es);
   switch(es->reason) {
     case NEWT_EXIT_HOTKEY:
-      return rb_sprintf("#<%s reason=%d, key=%d>", class, es->reason, es->u.key);
+      return rb_sprintf("#<%s:%p reason=%d, key=%d>", class, (void *) self, es->reason, es->u.key);
     case NEWT_EXIT_COMPONENT:
-      return rb_sprintf("#<%s reason=%d, component=%p>", class, es->reason, es->u.co);
+      return rb_sprintf("#<%s:%p reason=%d, component=%p>", class, (void *) self, es->reason, es->u.co);
     case NEWT_EXIT_FDREADY:
-      return rb_sprintf("#<%s reason=%d, watch=%d>", class, es->reason, es->u.watch);
+      return rb_sprintf("#<%s:%p reason=%d, watch=%d>", class, (void *) self, es->reason, es->u.watch);
     case NEWT_EXIT_TIMER:
     case NEWT_EXIT_ERROR:
-      return rb_sprintf("#<%s reason=%d>", class, es->reason);
+      return rb_sprintf("#<%s:%p reason=%d>", class, (void *) self, es->reason);
     default:
       return rb_call_super(0, NULL);
   }
