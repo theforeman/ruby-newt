@@ -696,6 +696,16 @@ static VALUE rb_ext_Widget_equal(VALUE self, VALUE obj)
   return Qfalse;
 }
 
+static VALUE rb_ext_Widget_inspect(VALUE self)
+{
+  newtComponent co;
+  VALUE classname = rb_class_name(rb_obj_class(self));
+  char *class = StringValuePtr(classname);
+
+  Get_newtComponent(self, co);
+  return rb_sprintf("#<%s:%p component=%p>", class, (void *) self, co);
+}
+
 static VALUE rb_ext_ExitStruct_reason(VALUE self)
 {
   struct newtExitStruct *es;
@@ -1699,6 +1709,7 @@ void Init_ruby_newt(){
   rb_define_method(cWidget, "get_position", rb_ext_Widget_GetPosition, 0);
   rb_define_method(cWidget, "get_size", rb_ext_Widget_GetSize, 0);
   rb_define_method(cWidget, "==", rb_ext_Widget_equal, 1);
+  rb_define_method(cWidget, "inspect", rb_ext_Widget_inspect, 0);
 
   cCompactButton = rb_define_class_under(mNewt, "CompactButton", cWidget);
   rb_define_singleton_method(cCompactButton, "new", rb_ext_CompactButton_new, 3);
