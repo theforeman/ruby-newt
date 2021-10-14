@@ -21,6 +21,7 @@ See http://github.com/theforeman/ruby-newt/tree/master/examples for usage exampl
 
 === From source
 
+  $ gem install rake rake-compiler
   $ git clone git://github.com/theforeman/ruby-newt
   $ cd ruby-newt
   $ gem build newt.gemspec
