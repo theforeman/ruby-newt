@@ -1,4 +1,6 @@
-.rvmrc
-newt-*.gem
-lib/ruby_newt/*so
-tmp/
+/.bundle
+/Gemfile.lock
+/lib/ruby_newt/*so
+/newt-*.gem
+/.rvmrc
+/tmp/
