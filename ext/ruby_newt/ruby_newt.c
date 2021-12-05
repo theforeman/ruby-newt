@@ -1668,6 +1668,8 @@ static VALUE rb_ext_Grid_GetSize(VALUE self)
 
 void Init_ruby_newt(){
   mNewt = rb_define_module("Newt");
+  rb_define_module_function(mNewt, "init", rb_ext_Screen_Init, 0);
+  rb_define_module_function(mNewt, "finish", rb_ext_Screen_Finished, 0);
   rb_define_module_function(mNewt, "delay", rb_ext_Delay, 1);
   rb_define_module_function(mNewt, "reflow_text", rb_ext_ReflowText, 4);
 
