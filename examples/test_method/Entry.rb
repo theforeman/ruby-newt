@@ -49,11 +49,15 @@ begin
   f.add(e1, e2, e3, b)
 
   f.run
+
+  e1 = e1.get
+  e2 = e2.get
+  e3 = e3.get
 ensure
   Newt::Screen.finish
 end
 
-p e1.get, e2.get, e3.get
+p e1, e2, e3
 puts
 puts "$widget = #{$widget}"
 puts "$data = #{$data}"

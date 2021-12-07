@@ -18,8 +18,9 @@ begin
   f.add(ct, b)
 
   f.run
+  selection = ct.get_selection('a')
 ensure
   Newt::Screen.finish
 end
 
-p ct.get_selection('a')
+p selection

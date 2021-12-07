@@ -3,7 +3,12 @@ require 'newt'
 
 class TestCheckbox < Minitest::Test
   def setup
+    Newt::init
     @cb = Newt::Checkbox.new(0, 0, 'Checkbox')
+  end
+
+  def teardown
+    Newt::finish
   end
 
   def test_invalid_argument_count

@@ -3,8 +3,13 @@ require 'newt'
 
 class TestRadiobutton < Minitest::Test
   def setup
+    Newt::init
     @rb1 = Newt::RadioButton.new(1, 1, 'Button1', 1)
     @rb2 = Newt::RadioButton.new(1, 2, 'Button2', 0, @rb1)
+  end
+
+  def teardown
+    Newt::finish
   end
 
   def test_invalid_argument_count

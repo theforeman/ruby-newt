@@ -26,7 +26,6 @@ f.add(b1, b2, b3, b4)
 grid.wrapped_window('first window')
 f.run
 
-# f.destroy
 Newt::Screen.pop_window
 
 flowed_text, text_width, text_height = Newt.reflow_text('This is a quite a bit of text. It is 40 ' \
@@ -58,7 +57,6 @@ f.add(b1, t, b2)
 f.run
 
 Newt::Screen.pop_window
-# f.destroy
 
 Newt::Screen.win_message('Simple', 'Ok', 'This is a simple message window')
 result = Newt::Screen.win_choice('Simple', 'Ok', 'Cancel', 'This is a simple choice window')

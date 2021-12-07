@@ -20,8 +20,14 @@ begin
   f.add(cb1, cb2, cb3, cb4, cb5, b)
 
   f.run
+
+  cb1 = cb1.get
+  cb2 = cb2.get
+  cb3 = cb3.get
+  cb4 = cb4.get
+  cb5 = cb5.get
 ensure
   Newt::Screen.finish
 end
 
-p cb1.get, cb2.get, cb3.get, cb4.get, cb5.get
+p cb1, cb2, cb3, cb4, cb5

@@ -49,7 +49,7 @@ e1 = Newt::Entry.new(12, 6, '', 20, 0)
 e2 = Newt::Entry.new(12, 7, 'É¸½à', 20, Newt::FLAG_SCROLL)
 e3 = Newt::Entry.new(12, 8, '', 20, Newt::FLAG_HIDDEN)
 
-cs[0].callback( proc { disableCallback(cs[0], e1) } )
+cs[0].callback( proc { disable_callback(cs[0], e1) } )
 scale = Newt::Scale.new(3, 14, 32, 100)
 
 chklist.set_height(3)
@@ -93,13 +93,17 @@ end
 Newt::Screen.pop_window
 Newt::Screen.pop_window
 
+e1 = e1.get
+e2 = e2.get
+e3 = e3.get
+selected_list = lb.get_selection
+
 Newt::Screen.finish
 
-printf "got string 1: %s\n", e1.get
-printf "got string 2: %s\n", e2.get
-printf "got string 3: %s\n", e3.get
+printf "got string 1: %s\n", e1
+printf "got string 2: %s\n", e2
+printf "got string 3: %s\n", e3
 
-selected_list = lb.get_selection
 if selected_list.count > 0
   print "\nSelected listbox items:\n"
   selected_list.each do |item|

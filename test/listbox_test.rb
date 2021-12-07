@@ -3,10 +3,15 @@ require 'newt'
 
 class TestListbox < Minitest::Test
   def setup
+    Newt::init
     @lb = Newt::Listbox.new(0, 0, 0)
     1.upto(5) do |i|
       @lb.append("item#{i}", i)
     end
+  end
+
+  def teardown
+    Newt::finish
   end
 
   def test_invalid_argument_count

@@ -21,6 +21,7 @@ begin
   f.add(b1, b2, b)
 
   rv = f.run
+  current = f.get_current
 ensure
   Newt::Screen.finish
 end
@@ -29,7 +30,7 @@ puts rv.inspect
 puts 'Button1' if rv == b1
 puts 'Button2' if b2 == rv
 puts 'Exit' if rv == b
-puts 'Exit button is current button' if b == f.get_current
+puts 'Exit button is current button' if b == current
 puts 'Escape' if rv.reason == Newt::EXIT_HOTKEY && rv.key == ?\e.ord
 puts 'Timeout' if rv.reason == Newt::EXIT_TIMER
 puts 'FD Watch' if rv.reason == Newt::EXIT_FDREADY
