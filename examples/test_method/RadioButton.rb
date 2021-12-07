@@ -16,8 +16,10 @@ begin
   f.add(rb1, rb2, b)
 
   f.run
+  current = rb1.get_current
 ensure
   Newt::Screen.finish
 end
 
-puts "selected: #{rb1.get_current}"
+puts "selected: #{current}"
+puts "current == rb1?: #{current == rb1}"

@@ -25,8 +25,9 @@ begin
   f.add(l1, b)
 
   f.run
+  item_count = l1.item_count
 ensure
   Newt::Screen.finish
 end
 
-puts "number of list items = #{l1.item_count}"
+puts "number of list items = #{item_count}"

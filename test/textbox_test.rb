@@ -3,7 +3,12 @@ require 'newt'
 
 class TestTextbox < Minitest::Test
   def setup
+    Newt::init
     @tb = Newt::Textbox.new(1, 1, 5, 3)
+  end
+
+  def teardown
+    Newt::finish
   end
 
   def test_invalid_argument_count

@@ -3,8 +3,13 @@ require 'newt'
 
 class TestEntry < Minitest::Test
   def setup
+    Newt::init
     @initial_text = 'initial text'
     @e = Newt::Entry.new(0, 0, @initial_text, 20)
+  end
+
+  def teardown
+    Newt::finish
   end
 
   def test_invalid_argument_count

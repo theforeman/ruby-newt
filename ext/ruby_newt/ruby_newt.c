@@ -6,6 +6,8 @@
 #include <ruby.h>
 #include <newt.h>
 
+static VALUE initialized = Qfalse;
+
 static VALUE mNewt;
 static VALUE mScreen;
 static VALUE cWidget;
@@ -44,6 +46,12 @@ static struct newtColors newtColors;
   rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected %s)", \
            (given), (expected))
 
+#define INIT_GUARD() do { \
+  if (initialized == Qfalse) { \
+      rb_raise(rb_eRuntimeError, "libnewt is not initialized"); \
+  } \
+} while (0)
+
 #define FLAG_GC_FREE       (1 << 0)
 #define FLAG_ADDED_TO_FORM (1 << 1)
 
@@ -76,6 +84,7 @@ static const rb_data_type_t Widget_type = {
 
 #define Get_newtComponent(self, component) do { \
   Widget_data *data; \
+  INIT_GUARD(); \
   Get_Widget_Data((self), data); \
   (component) = data->co; \
 } while (0)
@@ -163,21 +172,30 @@ static VALUE rb_ext_ColorSetCustom(VALUE self, VALUE id)
 
 static VALUE rb_ext_Screen_new()
 {
+  if (initialized == Qtrue)
+    return Qnil;
+
   newtInit();
   newtCls();
   memcpy(&newtColors, &newtDefaultColorPalette, sizeof(struct newtColors));
+  initialized = Qtrue;
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Init()
 {
+  if (initialized == Qtrue)
+    return Qnil;
+
   newtInit();
   memcpy(&newtColors, &newtDefaultColorPalette, sizeof(struct newtColors));
+  initialized = Qtrue;
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Cls()
 {
+  INIT_GUARD();
   newtCls();
   return Qnil;
 }
@@ -185,17 +203,20 @@ static VALUE rb_ext_Screen_Cls()
 static VALUE rb_ext_Screen_Finished()
 {
   newtFinished();
+  initialized = Qfalse;
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_WaitForKey()
 {
+  INIT_GUARD();
   newtWaitForKey();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_ClearKeyBuffer()
 {
+  INIT_GUARD();
   newtClearKeyBuffer();
   return Qnil;
 }
@@ -203,17 +224,20 @@ static VALUE rb_ext_Screen_ClearKeyBuffer()
 static VALUE rb_ext_Screen_OpenWindow(VALUE self, VALUE left, VALUE top,
     VALUE width, VALUE height, VALUE title)
 {
+  INIT_GUARD();
   return INT2NUM(newtOpenWindow(NUM2INT(left), NUM2INT(top), NUM2INT(width),
                                 NUM2INT(height), StringValuePtr(title)));
 }
 
 static VALUE rb_ext_Screen_CenteredWindow(VALUE self, VALUE width, VALUE height, VALUE title)
 {
+  INIT_GUARD();
   return INT2NUM(newtCenteredWindow(NUM2INT(width), NUM2INT(height), StringValuePtr(title)));
 }
 
 static VALUE rb_ext_Screen_PopWindow(VALUE self)
 {
+  INIT_GUARD();
   newtPopWindow();
   return Qnil;
 }
@@ -361,43 +385,50 @@ static VALUE rb_ext_Screen_SetColors(VALUE self, VALUE colors)
 {
   Check_Type(colors, T_HASH);
   rb_hash_foreach(colors, rb_ext_Colors_callback_function, (VALUE) &newtColors);
+
+  INIT_GUARD();
   newtSetColors(newtColors);
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_SetColor(VALUE self, VALUE colorset, VALUE fg, VALUE bg)
 {
+  INIT_GUARD();
   newtSetColor(NUM2INT(colorset), StringValuePtr(fg), StringValuePtr(bg));
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Resume()
 {
+  INIT_GUARD();
   newtResume();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Suspend()
 {
+  INIT_GUARD();
   newtSuspend();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Refresh()
 {
+  INIT_GUARD();
   newtRefresh();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_DrawRootText(VALUE self, VALUE col, VALUE row, VALUE text)
 {
-
+  INIT_GUARD();
   newtDrawRootText(NUM2INT(col), NUM2INT(row), StringValuePtr(text));
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_PushHelpLine(VALUE self, VALUE text)
 {
+  INIT_GUARD();
   newtPushHelpLine(StringValuePtr(text));
 
   return Qnil;
@@ -405,30 +436,35 @@ static VALUE rb_ext_Screen_PushHelpLine(VALUE self, VALUE text)
 
 static VALUE rb_ext_Screen_RedrawHelpLine(VALUE self)
 {
+  INIT_GUARD();
   newtRedrawHelpLine();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_PopHelpLine(VALUE self)
 {
+  INIT_GUARD();
   newtPopHelpLine();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_Bell(VALUE self)
 {
+  INIT_GUARD();
   newtBell();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_CursorOff(VALUE self)
 {
+  INIT_GUARD();
   newtCursorOff();
   return Qnil;
 }
 
 static VALUE rb_ext_Screen_CursorOn(VALUE self)
 {
+  INIT_GUARD();
   newtCursorOn();
   return Qnil;
 }
@@ -437,12 +473,14 @@ static VALUE rb_ext_Screen_Size(VALUE self)
 {
   int cols, rows;
 
+  INIT_GUARD();
   newtGetScreenSize(&cols, &rows);
   return rb_ary_new_from_args(2, INT2NUM(cols), INT2NUM(rows));
 }
 
 static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE title, VALUE button, VALUE text)
 {
+  INIT_GUARD();
   newtWinMessage(StringValuePtr(title), StringValuePtr(button), StringValuePtr(text));
   return Qnil;
 }
@@ -450,6 +488,8 @@ static VALUE rb_ext_Screen_WinMessage(VALUE self, VALUE title, VALUE button, VAL
 static VALUE rb_ext_Screen_WinChoice(VALUE self, VALUE title, VALUE button1, VALUE button2, VALUE text)
 {
   int result;
+
+  INIT_GUARD();
   result = newtWinChoice(StringValuePtr(title), StringValuePtr(button1),
                          StringValuePtr(button2), StringValuePtr(text));
   return INT2NUM(result);
@@ -467,6 +507,7 @@ static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
   if (len < 8 || len > 9)
     ARG_ERROR(len, "8..9");
 
+  INIT_GUARD();
   title = StringValuePtr(RARRAY_PTR(args)[0]);
   text = StringValuePtr(RARRAY_PTR(args)[1]);
   width = NUM2INT(RARRAY_PTR(args)[2]);
@@ -504,6 +545,7 @@ static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
   if (len < 8 || len > 9)
     ARG_ERROR(len, "8..9");
 
+  INIT_GUARD();
   title = StringValuePtr(RARRAY_PTR(args)[0]);
   text = StringValuePtr(RARRAY_PTR(args)[1]);
   width = NUM2INT(RARRAY_PTR(args)[2]);
@@ -610,6 +652,7 @@ static VALUE rb_ext_Screen_SuspendCallback(int argc, VALUE *argv, VALUE self)
   if (argc < 1 || argc > 2)
     ARG_ERROR(argc, "1 or 2");
 
+  INIT_GUARD();
   if (argc == 2)
     data = argv[1];
 
@@ -621,6 +664,7 @@ static VALUE rb_ext_Screen_SuspendCallback(int argc, VALUE *argv, VALUE self)
 
 static VALUE rb_ext_Screen_HelpCallback(VALUE self, VALUE cb)
 {
+  INIT_GUARD();
   cb = rb_struct_new(rb_ext_sCallback, Qnil, rb_binding_new(), cb, Qnil, NULL);
   rb_ivar_set(self, IVAR_HELP_CALLBACK, cb);
   newtSetHelpCallback(rb_ext_Screen_help_callback_function);
@@ -635,6 +679,7 @@ static VALUE rb_ext_Widget_callback(int argc, VALUE *argv, VALUE self)
   if (argc < 1 || argc > 2)
     ARG_ERROR(argc, "1 or 2");
 
+  INIT_GUARD();
   if (argc == 2)
     data = argv[1];
 
@@ -683,13 +728,15 @@ static VALUE rb_ext_Widget_equal(VALUE self, VALUE obj)
   if (self == obj) return Qtrue;
 
   if (rb_obj_is_kind_of(obj, cWidget) || rb_obj_is_kind_of(obj, cExitStruct)) {
-    Get_newtComponent(self, co);
+    Get_Widget_Data(self, data);
+    co = ((Widget_data *) data)->co;
     if (rb_obj_is_kind_of(obj, cExitStruct)) {
       Data_Get_Struct(obj, struct newtExitStruct, data);
       if (co == ((struct newtExitStruct *) data)->u.co)
         return Qtrue;
     } else {
-      Get_newtComponent(obj, cco);
+      Get_Widget_Data(obj, data);
+      cco = ((Widget_data *) data)->co;
       if (co == cco) return Qtrue;
     }
   }
@@ -699,10 +746,13 @@ static VALUE rb_ext_Widget_equal(VALUE self, VALUE obj)
 static VALUE rb_ext_Widget_inspect(VALUE self)
 {
   newtComponent co;
+  void *data;
+
   VALUE classname = rb_class_name(rb_obj_class(self));
   char *class = StringValuePtr(classname);
 
-  Get_newtComponent(self, co);
+  Get_Widget_Data(self, data);
+  co = ((Widget_data *) data)->co;
   return rb_sprintf("#<%s:%p component=%p>", class, (void *) self, co);
 }
 
@@ -738,19 +788,21 @@ static VALUE rb_ext_ExitStruct_key(VALUE self)
 
 static VALUE rb_ext_ExitStruct_component(VALUE self)
 {
-  struct newtExitStruct *es;
+  rb_newt_ExitStruct *rb_es;
 
-  Data_Get_Struct(self, struct newtExitStruct, es);
-  if (es->reason == NEWT_EXIT_COMPONENT)
-    return Make_Widget(cWidget, es->u.co);
-  else
-    return Qnil;
+  Data_Get_Struct(self, rb_newt_ExitStruct, rb_es);
+  if (rb_es->es.reason == NEWT_EXIT_COMPONENT) {
+      return rb_hash_aref(rb_es->components, PTR2NUM(rb_es->es.u.co));
+  } else {
+      return Qnil;
+  }
 }
 
 static VALUE rb_ext_ExitStruct_equal(VALUE self, VALUE obj)
 {
   struct newtExitStruct *es;
   newtComponent co;
+  void *data;
 
   if (NIL_P(obj)) return Qfalse;
   if (self == obj) return Qtrue;
@@ -758,7 +810,8 @@ static VALUE rb_ext_ExitStruct_equal(VALUE self, VALUE obj)
   /* Compare components for backwards compatibility with newtRunForm(). */
   if (rb_obj_is_kind_of(obj, cWidget)) {
     Data_Get_Struct(self, struct newtExitStruct, es);
-    Get_newtComponent(obj, co);
+    Get_Widget_Data(obj, data);
+    co = ((Widget_data *) data)->co;
     if (es->reason == NEWT_EXIT_COMPONENT && es->u.co == co) return Qtrue;
   }
   return Qfalse;
@@ -790,16 +843,17 @@ static VALUE rb_ext_Label_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
 
+  INIT_GUARD();
   co = newtLabel(NUM2INT(left), NUM2INT(top), StringValuePtr(text));
   return Make_Widget(self, co);
 }
 
 static VALUE rb_ext_Label_SetText(VALUE self, VALUE text)
 {
-  Widget_data *data;
+  newtComponent co;
 
-  Get_Widget_Data(self, data);
-  newtLabelSetText(data->co, StringValuePtr(text));
+  Get_newtComponent(self, co);
+  newtLabelSetText(co, StringValuePtr(text));
   return Qnil;
 }
 
@@ -816,6 +870,7 @@ static VALUE rb_ext_CompactButton_new(VALUE self, VALUE left, VALUE top, VALUE t
 {
   newtComponent co;
 
+  INIT_GUARD();
   co = newtCompactButton(NUM2INT(left), NUM2INT(top), StringValuePtr(text));
   return Make_Widget(self, co);
 }
@@ -824,6 +879,7 @@ static VALUE rb_ext_Button_new(VALUE self, VALUE left, VALUE top, VALUE text)
 {
   newtComponent co;
 
+  INIT_GUARD();
   co = newtButton(NUM2INT(left), NUM2INT(top), StringValuePtr(text));
   return Make_Widget(self, co);
 }
@@ -837,6 +893,7 @@ static VALUE rb_ext_Checkbox_new(int argc, VALUE *argv, VALUE self)
   if (argc < 3 || argc > 5)
     ARG_ERROR(argc, "3..5");
 
+  INIT_GUARD();
   if (argc > 3 && !NIL_P(argv[3]))
     defValue = StringValuePtr(argv[3])[0];
 
@@ -893,6 +950,7 @@ static VALUE rb_ext_RadioButton_new(int argc, VALUE *argv, VALUE self)
   if (argc < 3 || argc > 5)
     ARG_ERROR(argc, "3..5");
 
+  INIT_GUARD();
   if (argc >= 4)
     is_default = NUM2INT(argv[3]);
 
@@ -929,7 +987,9 @@ static VALUE rb_ext_Listbox_new(int argc, VALUE *argv, VALUE self)
   if (argc < 3 || argc > 4)
     ARG_ERROR(argc, "3..4");
 
+  INIT_GUARD();
   flags = (argc == 4) ? NUM2INT(argv[3]) : 0;
+
   co = newtListbox(NUM2INT(argv[0]), NUM2INT(argv[1]), NUM2INT(argv[2]), flags);
   return Make_Widget(self, co);
 }
@@ -1101,7 +1161,9 @@ static VALUE rb_ext_CheckboxTree_new(int argc, VALUE *argv, VALUE self)
   if (argc < 3 || argc > 4)
     ARG_ERROR(argc, "3..4");
 
+  INIT_GUARD();
   flags = (argc == 4) ? NUM2INT(argv[3]) : 0;
+
   co = newtCheckboxTree(NUM2INT(argv[0]), NUM2INT(argv[1]), NUM2INT(argv[2]), flags);
   return Make_Widget(self, co);
 }
@@ -1223,11 +1285,13 @@ static VALUE rb_ext_CheckboxTreeMulti_new(int argc, VALUE *argv, VALUE self)
   if (argc < 3 || argc > 5)
     ARG_ERROR(argc, "3..5");
 
+  INIT_GUARD();
   seq = NULL;
   if (argc >= 4 && !NIL_P(argv[3]) && RSTRING_LEN(argv[3]))
     seq = StringValuePtr(argv[3]);
 
   flags = (argc == 5) ? NUM2INT(argv[4]) : 0;
+
   co = newtCheckboxTreeMulti(NUM2INT(argv[0]), NUM2INT(argv[1]), NUM2INT(argv[2]), seq, flags);
   return Make_Widget(self, co);
 }
@@ -1251,7 +1315,9 @@ static VALUE rb_ext_Textbox_new(int argc, VALUE *argv, VALUE self)
   if (argc < 4 || argc > 5)
     ARG_ERROR(argc, "4..5");
 
+  INIT_GUARD();
   flags = (argc == 5) ? NUM2INT(argv[4]) : 0;
+
   co = newtTextbox(NUM2INT(argv[0]), NUM2INT(argv[1]), NUM2INT(argv[2]), NUM2INT(argv[3]), flags);
   return Make_Widget(self, co);
 }
@@ -1299,7 +1365,9 @@ static VALUE rb_ext_TextboxReflowed_new(int argc, VALUE *argv, VALUE self)
   if (argc < 6 || argc > 7)
     ARG_ERROR(argc, "6..7");
 
+  INIT_GUARD();
   flags = (argc == 7) ? NUM2INT(argv[6]) : 0;
+
   co = newtTextboxReflowed(NUM2INT(argv[0]), NUM2INT(argv[1]),
                            StringValuePtr(argv[2]), NUM2INT(argv[3]),
                            NUM2INT(argv[4]), NUM2INT(argv[5]), flags);
@@ -1316,6 +1384,7 @@ static VALUE rb_ext_Form_new(int argc, VALUE *argv, VALUE self)
   if (argc > 3)
     ARG_ERROR(argc, "0..3");
 
+  INIT_GUARD();
   helpTag = (argc >= 2) ? argv[1] : Qnil;
   flags = (argc == 3) ? NUM2INT(argv[2]) : 0;
 
@@ -1339,6 +1408,7 @@ static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE components)
   VALUE str;
   int i;
 
+  INIT_GUARD();
   Get_Widget_Data(self, form);
   if (RARRAY_LEN(components) > 0 && (void *) form->components == NULL) {
     form->components = rb_ary_new();
@@ -1467,7 +1537,9 @@ static VALUE rb_ext_Entry_new(int argc, VALUE *argv, VALUE self)
   if (argc < 4 || argc > 5)
     ARG_ERROR(argc, "4..5");
 
+  INIT_GUARD();
   flags = (argc == 5) ? NUM2INT(argv[4]) : 0;
+
   co = newtEntry(NUM2INT(argv[0]), NUM2INT(argv[1]), StringValuePtr(argv[2]),
                  NUM2INT(argv[3]), NULL, flags);
 
@@ -1568,6 +1640,7 @@ static VALUE rb_ext_Scale_new(VALUE self, VALUE left, VALUE top, VALUE width, VA
 {
   newtComponent co;
 
+  INIT_GUARD();
   co = newtScale(NUM2INT(left), NUM2INT(top), NUM2INT(width), NUM2INT(fullValue));
   return Make_Widget(self, co);
 }
@@ -1602,6 +1675,7 @@ static VALUE rb_ext_Grid_new(VALUE self, VALUE cols, VALUE rows)
   if (num_cols <= 0 || num_rows <= 0)
     rb_raise(rb_eRuntimeError, "specified number of columns or rows should be greater than 0");
 
+  INIT_GUARD();
   grid = newtCreateGrid(num_cols, num_rows);
   widget = Data_Wrap_Struct(self, 0, 0, grid);
   rb_ivar_set(widget, IVAR_COLS, cols);
@@ -1625,10 +1699,13 @@ static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, 
   if (icol >= cols || irow >= rows)
     rb_raise(rb_eRuntimeError, "attempting to set a field at an invalid position (%d, %d)", icol, irow);
 
-  if (itype == NEWT_GRID_SUBGRID)
+  INIT_GUARD();
+  if (itype == NEWT_GRID_SUBGRID) {
     Data_Get_Struct(val, struct grid_s, co);
-  else
-    Get_newtComponent(val, co);
+  } else {
+    Get_Widget_Data(val, co);
+    co = ((Widget_data *) co)->co;
+  }
 
   Data_Get_Struct(self, struct grid_s, grid);
   newtGridSetField(grid, icol, irow, itype, co, NUM2INT(padLeft),
@@ -1646,6 +1723,7 @@ static VALUE rb_ext_Grid_WrappedWindow(int argc, VALUE *argv, VALUE self)
   if (argc != 1 && argc != 3)
     ARG_ERROR(argc, "1 or 3");
 
+  INIT_GUARD();
   title = StringValuePtr(argv[0]);
   Data_Get_Struct(self, struct grid_s, grid);
   if (argc == 1) {
@@ -1661,6 +1739,7 @@ static VALUE rb_ext_Grid_GetSize(VALUE self)
   newtGrid grid;
   int width, height;
 
+  INIT_GUARD();
   Data_Get_Struct(self, struct grid_s, grid);
   newtGridGetSize(grid, &width, &height);
   return rb_ary_new_from_args(2, INT2NUM(width), INT2NUM(height));

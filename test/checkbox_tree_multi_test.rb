@@ -3,12 +3,17 @@ require 'newt'
 
 class TestCheckboxTreeMulti < Minitest::Test
   def setup
+    Newt::init
     @ct = Newt::CheckboxTreeMulti.new(1, 1, 3, ' ab', 0)
     @ct.add('Checkbox1', 1, 0, Newt::ARG_APPEND)
     @ct.add('Checkbox2', 2, 0, Newt::ARG_APPEND)
     @ct.add('Checkbox3', 3, 0, Newt::ARG_APPEND)
     @ct.add('Checkbox4', 4, 0, 2, Newt::ARG_APPEND)
     @ct.add('Checkbox5', 5, 0, 2, Newt::ARG_APPEND)
+  end
+
+  def teardown
+    Newt::finish
   end
 
   def test_invalid_argument_count
