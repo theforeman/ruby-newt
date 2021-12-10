@@ -31,6 +31,7 @@ static VALUE cGrid;
 static VALUE rb_ext_sCallback;
 static struct newtColors newtColors;
 
+#define PTR2NUM(ptr)      (SIZET2NUM((size_t)(ptr)))
 #define SYMBOL(str)       (ID2SYM(rb_intern(str)))
 #define PROC_CALL         (rb_intern("call"))
 #define RECEIVER(context) (rb_funcall((context), rb_intern("receiver"), 0))
@@ -61,6 +62,12 @@ struct Widget_data_s {
   VALUE components;
   newtComponent co;
   int flags;
+};
+
+typedef struct rb_newt_ExitStruct_s rb_newt_ExitStruct;
+struct rb_newt_ExitStruct_s {
+    struct newtExitStruct es;
+    VALUE components;
 };
 
 static void free_widget(void *ptr);
@@ -94,6 +101,7 @@ static inline VALUE widget_data_make(VALUE klass, newtComponent co, bool gc_free
   Widget_data *data;
   VALUE self = TypedData_Make_Struct(klass, Widget_data, &Widget_type, data);
   data->self = self;
+  data->components = Qnil;
   data->co = co;
   data->flags |= gc_free;
   return self;
@@ -129,6 +137,12 @@ static void form_destroy(Widget_data *form)
 {
   if (form->flags & FLAG_GC_FREE) newtFormDestroy(form->co);
   rb_gc_unregister_address(&form->components);
+}
+
+static void rb_newt_es_free(rb_newt_ExitStruct *rb_es)
+{
+  rb_gc_unregister_address(&rb_es->components);
+  xfree(rb_es);
 }
 
 #define Data_Attach(self, data) do { \
@@ -189,6 +203,8 @@ static VALUE rb_ext_Screen_Init()
 
   newtInit();
   memcpy(&newtColors, &newtDefaultColorPalette, sizeof(struct newtColors));
+  rb_ext_Widget_Hash = rb_hash_new();
+  rb_gc_register_address(&rb_ext_Widget_Hash);
   initialized = Qtrue;
   return Qnil;
 }
@@ -731,8 +747,8 @@ static VALUE rb_ext_Widget_equal(VALUE self, VALUE obj)
     Get_Widget_Data(self, data);
     co = ((Widget_data *) data)->co;
     if (rb_obj_is_kind_of(obj, cExitStruct)) {
-      Data_Get_Struct(obj, struct newtExitStruct, data);
-      if (co == ((struct newtExitStruct *) data)->u.co)
+      Data_Get_Struct(obj, rb_newt_ExitStruct, data);
+      if (co == (((rb_newt_ExitStruct *) data)->es.u.co))
         return Qtrue;
     } else {
       Get_Widget_Data(obj, data);
@@ -758,30 +774,30 @@ static VALUE rb_ext_Widget_inspect(VALUE self)
 
 static VALUE rb_ext_ExitStruct_reason(VALUE self)
 {
-  struct newtExitStruct *es;
+  rb_newt_ExitStruct *rb_es;
 
-  Data_Get_Struct(self, struct newtExitStruct, es);
-  return INT2NUM(es->reason);
+  Data_Get_Struct(self, rb_newt_ExitStruct, rb_es);
+  return INT2NUM(rb_es->es.reason);
 }
 
 static VALUE rb_ext_ExitStruct_watch(VALUE self)
 {
-  struct newtExitStruct *es;
+  rb_newt_ExitStruct *rb_es;
 
-  Data_Get_Struct(self, struct newtExitStruct, es);
-  if (es->reason == NEWT_EXIT_FDREADY)
-    return INT2NUM(es->u.watch);
+  Data_Get_Struct(self, rb_newt_ExitStruct, rb_es);
+  if (rb_es->es.reason == NEWT_EXIT_FDREADY)
+    return INT2NUM(rb_es->es.u.watch);
   else
     return Qnil;
 }
 
 static VALUE rb_ext_ExitStruct_key(VALUE self)
 {
-  struct newtExitStruct *es;
+  rb_newt_ExitStruct *rb_es;
 
-  Data_Get_Struct(self, struct newtExitStruct, es);
-  if (es->reason == NEWT_EXIT_HOTKEY)
-    return INT2NUM(es->u.key);
+  Data_Get_Struct(self, rb_newt_ExitStruct, rb_es);
+  if (rb_es->es.reason == NEWT_EXIT_HOTKEY)
+    return INT2NUM(rb_es->es.u.key);
   else
     return Qnil;
 }
@@ -800,7 +816,7 @@ static VALUE rb_ext_ExitStruct_component(VALUE self)
 
 static VALUE rb_ext_ExitStruct_equal(VALUE self, VALUE obj)
 {
-  struct newtExitStruct *es;
+  rb_newt_ExitStruct *rb_es;
   newtComponent co;
   void *data;
 
@@ -809,31 +825,36 @@ static VALUE rb_ext_ExitStruct_equal(VALUE self, VALUE obj)
 
   /* Compare components for backwards compatibility with newtRunForm(). */
   if (rb_obj_is_kind_of(obj, cWidget)) {
-    Data_Get_Struct(self, struct newtExitStruct, es);
+    Data_Get_Struct(self, rb_newt_ExitStruct, rb_es);
     Get_Widget_Data(obj, data);
     co = ((Widget_data *) data)->co;
-    if (es->reason == NEWT_EXIT_COMPONENT && es->u.co == co) return Qtrue;
+    if (rb_es->es.reason == NEWT_EXIT_COMPONENT
+        && rb_es->es.u.co == co) return Qtrue;
   }
   return Qfalse;
 }
 
 static VALUE rb_ext_ExitStruct_inspect(VALUE self)
 {
-  struct newtExitStruct *es;
+  rb_newt_ExitStruct *rb_es;
   VALUE classname = rb_class_name(rb_obj_class(self));
   char *class = StringValuePtr(classname);
 
-  Data_Get_Struct(self, struct newtExitStruct, es);
-  switch(es->reason) {
+  Data_Get_Struct(self, rb_newt_ExitStruct, rb_es);
+  switch(rb_es->es.reason) {
     case NEWT_EXIT_HOTKEY:
-      return rb_sprintf("#<%s:%p reason=%d, key=%d>", class, (void *) self, es->reason, es->u.key);
+      return rb_sprintf("#<%s:%p reason=%d, key=%d>", class, (void *) self,
+                        rb_es->es.reason, rb_es->es.u.key);
     case NEWT_EXIT_COMPONENT:
-      return rb_sprintf("#<%s:%p reason=%d, component=%p>", class, (void *) self, es->reason, es->u.co);
+      return rb_sprintf("#<%s:%p reason=%d, component=%p>", class, (void *) self,
+                        rb_es->es.reason, rb_es->es.u.co);
     case NEWT_EXIT_FDREADY:
-      return rb_sprintf("#<%s:%p reason=%d, watch=%d>", class, (void *) self, es->reason, es->u.watch);
+      return rb_sprintf("#<%s:%p reason=%d, watch=%d>", class, (void *) self,
+                        rb_es->es.reason, rb_es->es.u.watch);
     case NEWT_EXIT_TIMER:
     case NEWT_EXIT_ERROR:
-      return rb_sprintf("#<%s:%p reason=%d>", class, (void *) self, es->reason);
+      return rb_sprintf("#<%s:%p reason=%d>", class, (void *) self,
+                        rb_es->es.reason);
     default:
       return rb_call_super(0, NULL);
   }
@@ -1410,8 +1431,8 @@ static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE components)
 
   INIT_GUARD();
   Get_Widget_Data(self, form);
-  if (RARRAY_LEN(components) > 0 && (void *) form->components == NULL) {
-    form->components = rb_ary_new();
+  if (RARRAY_LEN(components) > 0 && form->components == Qnil) {
+    form->components = rb_hash_new();
     rb_gc_register_address(&form->components);
   }
 
@@ -1425,7 +1446,7 @@ static VALUE rb_ext_Form_AddComponents(VALUE self, VALUE components)
 
     co->flags ^= FLAG_GC_FREE;
     co->flags |= FLAG_ADDED_TO_FORM;
-    rb_ary_push(form->components, RARRAY_PTR(components)[i]);
+    rb_hash_aset(form->components, PTR2NUM(co->co), RARRAY_PTR(components)[i]);
     newtFormAddComponent(form->co, co->co);
   }
   return Qnil;
@@ -1479,13 +1500,16 @@ static VALUE rb_ext_Form_SetWidth(VALUE self, VALUE width)
 
 static VALUE rb_ext_Form_Run(VALUE self)
 {
-  newtComponent form;
-  struct newtExitStruct *es;
+  Widget_data *data;
+  rb_newt_ExitStruct *rb_es;
 
-  Get_newtComponent(self, form);
-  es = ALLOC(struct newtExitStruct);
-  newtFormRun(form, es);
-  return Data_Wrap_Struct(cExitStruct, 0, xfree, es);
+  INIT_GUARD();
+  Get_Widget_Data(self, data);
+  rb_es = ALLOC(rb_newt_ExitStruct);
+  newtFormRun(data->co, &rb_es->es);
+  rb_es->components = data->components;
+  rb_gc_register_address(&rb_es->components);
+  return Data_Wrap_Struct(cExitStruct, 0, rb_newt_es_free, rb_es);
 }
 
 static VALUE rb_ext_Form_DrawForm(VALUE self)
