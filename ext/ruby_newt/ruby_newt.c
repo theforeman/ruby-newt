@@ -184,18 +184,6 @@ static VALUE rb_ext_ColorSetCustom(VALUE self, VALUE id)
   return INT2NUM(NEWT_COLORSET_CUSTOM(NUM2INT(id)));
 }
 
-static VALUE rb_ext_Screen_new()
-{
-  if (initialized == Qtrue)
-    return Qnil;
-
-  newtInit();
-  newtCls();
-  memcpy(&newtColors, &newtDefaultColorPalette, sizeof(struct newtColors));
-  initialized = Qtrue;
-  return Qnil;
-}
-
 static VALUE rb_ext_Screen_Init()
 {
   if (initialized == Qtrue)
@@ -203,9 +191,14 @@ static VALUE rb_ext_Screen_Init()
 
   newtInit();
   memcpy(&newtColors, &newtDefaultColorPalette, sizeof(struct newtColors));
-  rb_ext_Widget_Hash = rb_hash_new();
-  rb_gc_register_address(&rb_ext_Widget_Hash);
   initialized = Qtrue;
+  return Qnil;
+}
+
+static VALUE rb_ext_Screen_new()
+{
+  rb_ext_Screen_Init();
+  newtCls();
   return Qnil;
 }
 
@@ -1777,8 +1770,8 @@ void Init_ruby_newt(){
   rb_define_module_function(mNewt, "reflow_text", rb_ext_ReflowText, 4);
 
   mScreen = rb_define_class_under(mNewt, "Screen", rb_cObject);
-  rb_define_module_function(mScreen, "new", rb_ext_Screen_new, 0);
   rb_define_module_function(mScreen, "init", rb_ext_Screen_Init, 0);
+  rb_define_module_function(mScreen, "new", rb_ext_Screen_new, 0);
   rb_define_module_function(mScreen, "cls", rb_ext_Screen_Cls, 0);
   rb_define_module_function(mScreen, "finish", rb_ext_Screen_Finished, 0);
   rb_define_module_function(mScreen, "wait_for_key", rb_ext_Screen_WaitForKey, 0);
