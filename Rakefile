@@ -8,7 +8,9 @@ Rake::ExtensionTask.new 'ruby_newt' do |ext|
 end
 
 Rake::TestTask.new do |t|
+  t.name = :test_task
   t.test_files = FileList['test/**/*_test.rb']
+  t.libs << 'test'
 end
 
 task :test_interactive do
@@ -33,3 +35,4 @@ def run_scripts(scripts)
 end
 
 task :default => :compile
+task :test => [:compile, :test_task]

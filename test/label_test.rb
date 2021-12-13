@@ -4,10 +4,10 @@ require 'minitest/autorun'
 require 'test_helper'
 require 'newt'
 
-class TestScale < Minitest::Test
+class TestLabel < Minitest::Test
   def setup
     Newt.init
-    @s = Newt::Scale.new(1, 1, 2, 100)
+    @l = Newt::Label.new(1, 1, 'Label')
   end
 
   def teardown
@@ -16,49 +16,49 @@ class TestScale < Minitest::Test
 
   def test_invalid_argument_count
     assert_raises(ArgumentError) do
-      Newt::Scale.new(1, 1)
+      Newt::Label.new(1, 1)
     end
 
     assert_raises(ArgumentError) do
-      Newt::Scale.new(1, 1, 2, 100, 0, 0, 0, 0)
+      Newt::Label.new(1, 1, 2, 100, 0, 0, 0, 0)
     end
   end
 
   def test_new
-    Newt::Scale.new(1, 1, 2, 100)
+    Newt::Label.new(1, 1, 'Label')
   end
 
-  def test_set
-    @s.set(50)
+  def test_set_text
+    @l.set_text('New Label')
   end
 
   def test_set_colors
-    @s.set_colors(Newt::COLORSET_EMPTYSCALE, Newt::COLORSET_FULLSCALE)
+    @l.set_colors(Newt::COLORSET_LABEL)
   end
 end
 
-class TestScaleUninitialized < Minitest::Test
+class TestLabelUninitialized < Minitest::Test
   def setup
     Newt.init
-    @s = Newt::Scale.new(1, 1, 2, 100)
+    @l = Newt::Label.new(1, 1, 'Label')
     Newt.finish
   end
 
   def test_new
     assert_init_exception do
-      Newt::Scale.new(1, 1, 2, 100)
+      Newt::Label.new(1, 1, 'Exit')
     end
   end
 
-  def test_set
+  def test_set_text
     assert_init_exception do
-      @s.set(50)
+      @l.set_text('New Label')
     end
   end
 
   def test_set_colors
     assert_init_exception do
-      @s.set_colors(Newt::COLORSET_EMPTYSCALE, Newt::COLORSET_FULLSCALE)
+      @l.set_colors(Newt::COLORSET_LABEL)
     end
   end
 end
