@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.name = "newt"
   s.version = ::Newt::VERSION
 
-  s.authors = ["Noritsugu Nakamura", "Eric Sperano", "Lukas Zapletal"]
+  s.authors = ["Noritsugu Nakamura", "Eric Sperano", "Lukas Zapletal", "Robert Gill"]
   s.summary = "Ruby bindings for newt"
   s.description = "Ruby bindings for newt TUI library"
   s.homepage = "https://github.com/theforeman/ruby-newt"
