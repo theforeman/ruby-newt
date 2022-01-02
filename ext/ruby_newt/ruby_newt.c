@@ -39,9 +39,9 @@ static struct newtColors newtColors;
 #define IVAR_COLS   (rb_intern("newt_ivar_cols"))
 #define IVAR_ROWS   (rb_intern("newt_ivar_rows"))
 #define IVAR_FILTER_CALLBACK  (rb_intern("newt_ivar_filter_callback"))
-#define IVAR_SUSPEND_CALLBACK (rb_intern("newt_ivar_suspend_callback"))
-#define IVAR_HELP_CALLBACK    (rb_intern("newt_ivar_help_callback"))
-#define IVAR_WIDGET_CALLBACK  (rb_intern("newt_ivar_widget_callback"))
+#define CVAR_SUSPEND_CALLBACK (rb_intern("newt_cvar_suspend_callback"))
+#define CVAR_HELP_CALLBACK    (rb_intern("newt_cvar_help_callback"))
+#define CVAR_WIDGET_CALLBACK  (rb_intern("newt_cvar_widget_callback"))
 
 #define ARG_ERROR(given, expected) \
   rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected %s)", \
@@ -606,7 +606,7 @@ void rb_ext_Screen_help_callback_function(newtComponent co, void *data)
   VALUE context, callback;
 
   widget = Make_Widget_Ref(cForm, co);
-  cb = rb_ivar_get(mScreen, IVAR_HELP_CALLBACK);
+  cb = rb_cvar_get(mScreen, CVAR_HELP_CALLBACK);
   context = RSTRUCT_GET((VALUE) cb, 1);
   callback = RSTRUCT_GET((VALUE) cb, 2);
 
@@ -666,7 +666,7 @@ static VALUE rb_ext_Screen_SuspendCallback(int argc, VALUE *argv, VALUE self)
     data = argv[1];
 
   cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
-  rb_ivar_set(self, IVAR_SUSPEND_CALLBACK, cb);
+  rb_cvar_set(self, CVAR_SUSPEND_CALLBACK, cb);
   newtSetSuspendCallback(rb_ext_Screen_suspend_callback_function, (void *) cb);
   return Qnil;
 }
@@ -675,7 +675,7 @@ static VALUE rb_ext_Screen_HelpCallback(VALUE self, VALUE cb)
 {
   INIT_GUARD();
   cb = rb_struct_new(rb_ext_sCallback, Qnil, rb_binding_new(), cb, Qnil, NULL);
-  rb_ivar_set(self, IVAR_HELP_CALLBACK, cb);
+  rb_cvar_set(self, CVAR_HELP_CALLBACK, cb);
   newtSetHelpCallback(rb_ext_Screen_help_callback_function);
   return Qnil;
 }
@@ -694,7 +694,7 @@ static VALUE rb_ext_Widget_callback(int argc, VALUE *argv, VALUE self)
 
   Get_newtComponent(self, co);
   cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
-  rb_ivar_set(self, IVAR_WIDGET_CALLBACK, cb);
+  rb_cvar_set(self, CVAR_WIDGET_CALLBACK, cb);
   newtComponentAddCallback(co, rb_ext_Widget_callback_function, (void *) cb);
   return Qnil;
 }
@@ -1799,7 +1799,7 @@ void Init_ruby_newt(){
   rb_define_module_function(mScreen, "win_menu", rb_ext_Screen_WinMenu, -2);
   rb_define_module_function(mScreen, "win_entries", rb_ext_Screen_WinEntries, -2);
 
-  rb_ext_sCallback = rb_struct_define(NULL, "widget", "context", "callback", "data", NULL);
+  rb_ext_sCallback = rb_struct_define("NewtCallback", "widget", "context", "callback", "data", NULL);
 
   cWidget = rb_define_class_under(mNewt, "Widget", rb_cObject);
   rb_define_method(cWidget, "callback", rb_ext_Widget_callback, -1);
