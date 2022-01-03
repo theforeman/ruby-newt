@@ -666,6 +666,7 @@ static VALUE rb_ext_Screen_SuspendCallback(int argc, VALUE *argv, VALUE self)
     data = argv[1];
 
   cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
+  rb_obj_freeze(cb);
   rb_cvar_set(self, CVAR_SUSPEND_CALLBACK, cb);
   newtSetSuspendCallback(rb_ext_Screen_suspend_callback_function, (void *) cb);
   return Qnil;
@@ -675,6 +676,7 @@ static VALUE rb_ext_Screen_HelpCallback(VALUE self, VALUE cb)
 {
   INIT_GUARD();
   cb = rb_struct_new(rb_ext_sCallback, Qnil, rb_binding_new(), cb, Qnil, NULL);
+  rb_obj_freeze(cb);
   rb_cvar_set(self, CVAR_HELP_CALLBACK, cb);
   newtSetHelpCallback(rb_ext_Screen_help_callback_function);
   return Qnil;
@@ -694,6 +696,7 @@ static VALUE rb_ext_Widget_callback(int argc, VALUE *argv, VALUE self)
 
   Get_newtComponent(self, co);
   cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
+  rb_obj_freeze(cb);
   rb_cvar_set(self, CVAR_WIDGET_CALLBACK, cb);
   newtComponentAddCallback(co, rb_ext_Widget_callback_function, (void *) cb);
   return Qnil;
@@ -1606,6 +1609,7 @@ static VALUE rb_ext_Entry_SetFilter(int argc, VALUE *argv, VALUE self)
 
   Get_newtComponent(self, co);
   cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
+  rb_obj_freeze(cb);
   rb_ivar_set(self, IVAR_FILTER_CALLBACK, cb);
   newtEntrySetFilter(co, rb_ext_Entry_filter_function, (void *) cb);
   return Qnil;
