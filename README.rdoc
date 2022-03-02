@@ -29,8 +29,9 @@ See http://github.com/theforeman/ruby-newt/tree/master/examples for usage exampl
 
 === Development
 
-  $ gem install rake-compiler
-  $ rake compile
+  $ bundle install
+  $ bundle exec rake compile
+  $ bundle exec rake test
 
 == REQUIREMENTS
 
@@ -79,6 +80,8 @@ programs using the ruby-newt library may need to be changed.
   modify this hash directly will break.
 * The various _add_callback_ methods no longer return the previously set
   callback when called with no parameters.
+* Use +get_current+ instead of +get+ for radiobuttons.
+* Use +set_current+ instead of +set+ for radiobuttons.
 
 == AUTHORS
 
