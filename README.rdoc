@@ -29,6 +29,7 @@ See http://github.com/theforeman/ruby-newt/tree/master/examples for usage exampl
 
 === Development
 
+  $ gem install rake-compiler
   $ rake compile
 
 == REQUIREMENTS
