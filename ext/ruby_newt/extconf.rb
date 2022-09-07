@@ -1,6 +1,6 @@
 require 'mkmf'
 
-pkg_config('s-lang')
+pkg_config('slang')
 pkg_config(RUBY_PLATFORM.include?('darwin') ? 'libnewt' : 'newt')
 
 append_cflags(ENV['CFLAGS'])
