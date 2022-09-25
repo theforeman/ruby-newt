@@ -38,10 +38,10 @@ static struct newtColors newtColors;
 #define IVAR_DATA   (rb_intern("newt_ivar_data"))
 #define IVAR_COLS   (rb_intern("newt_ivar_cols"))
 #define IVAR_ROWS   (rb_intern("newt_ivar_rows"))
-#define IVAR_FILTER_CALLBACK  (rb_intern("newt_ivar_filter_callback"))
 #define CVAR_SUSPEND_CALLBACK (rb_intern("newt_cvar_suspend_callback"))
 #define CVAR_HELP_CALLBACK    (rb_intern("newt_cvar_help_callback"))
-#define CVAR_WIDGET_CALLBACK  (rb_intern("newt_cvar_widget_callback"))
+#define IVAR_FILTER_CALLBACK  (rb_intern("newt_ivar_filter_callback"))
+#define IVAR_WIDGET_CALLBACK  (rb_intern("newt_ivar_widget_callback"))
 
 #define ARG_ERROR(given, expected) \
   rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected %s)", \
@@ -697,7 +697,7 @@ static VALUE rb_ext_Widget_callback(int argc, VALUE *argv, VALUE self)
   Get_newtComponent(self, co);
   cb = rb_struct_new(rb_ext_sCallback, self, rb_binding_new(), argv[0], data, NULL);
   rb_obj_freeze(cb);
-  rb_cvar_set(self, CVAR_WIDGET_CALLBACK, cb);
+  rb_ivar_set(self, IVAR_WIDGET_CALLBACK, cb);
   newtComponentAddCallback(co, rb_ext_Widget_callback_function, (void *) cb);
   return Qnil;
 }
