@@ -121,6 +121,13 @@ static inline Widget_data *widget_data_get(VALUE self)
   return data;
 }
 
+NORETURN(static VALUE newt_s_alloc(VALUE klass));
+static VALUE newt_s_alloc(VALUE klass)
+{
+  rb_raise(rb_eTypeError, "allocator undefined for %"PRIsVALUE, klass);
+  UNREACHABLE_RETURN(Qnil);
+}
+
 static void free_widget(void *ptr)
 {
   Widget_data *data = (Widget_data *) ptr;
@@ -1774,6 +1781,7 @@ void Init_ruby_newt(){
   rb_define_module_function(mNewt, "reflow_text", rb_ext_ReflowText, 4);
 
   mScreen = rb_define_class_under(mNewt, "Screen", rb_cObject);
+  rb_define_alloc_func(mScreen, newt_s_alloc);
   rb_define_module_function(mScreen, "init", rb_ext_Screen_Init, 0);
   rb_define_module_function(mScreen, "new", rb_ext_Screen_new, 0);
   rb_define_module_function(mScreen, "cls", rb_ext_Screen_Cls, 0);
@@ -1806,6 +1814,7 @@ void Init_ruby_newt(){
   rb_ext_sCallback = rb_struct_define("NewtCallback", "widget", "context", "callback", "data", NULL);
 
   cWidget = rb_define_class_under(mNewt, "Widget", rb_cObject);
+  rb_define_alloc_func(cWidget, newt_s_alloc);
   rb_define_method(cWidget, "callback", rb_ext_Widget_callback, -1);
   rb_define_method(cWidget, "takes_focus", rb_ext_Widget_takesFocus, 1);
   rb_define_method(cWidget, "get_position", rb_ext_Widget_GetPosition, 0);
@@ -1895,6 +1904,7 @@ void Init_ruby_newt(){
   rb_define_method(cForm, "watch_fd", rb_ext_Form_WatchFd, 2);
 
   cExitStruct = rb_define_class_under(cForm, "ExitStruct", rb_cObject);
+  rb_define_alloc_func(cExitStruct, newt_s_alloc);
   rb_define_private_method(rb_singleton_class(cExitStruct), "new", NULL, 0);
   rb_define_method(cExitStruct, "reason", rb_ext_ExitStruct_reason, 0);
   rb_define_method(cExitStruct, "watch", rb_ext_ExitStruct_watch, 0);
