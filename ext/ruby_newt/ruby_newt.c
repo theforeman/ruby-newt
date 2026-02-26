@@ -191,7 +191,7 @@ static VALUE rb_ext_ColorSetCustom(VALUE self, VALUE id)
   return INT2NUM(NEWT_COLORSET_CUSTOM(NUM2INT(id)));
 }
 
-static VALUE rb_ext_Screen_Init()
+static VALUE rb_ext_Screen_Init(VALUE self)
 {
   if (initialized == Qtrue)
     return Qnil;
@@ -202,35 +202,35 @@ static VALUE rb_ext_Screen_Init()
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_new()
+static VALUE rb_ext_Screen_new(VALUE self)
 {
-  rb_ext_Screen_Init();
+  rb_ext_Screen_Init(self);
   newtCls();
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_Cls()
+static VALUE rb_ext_Screen_Cls(VALUE self)
 {
   INIT_GUARD();
   newtCls();
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_Finished()
+static VALUE rb_ext_Screen_Finished(VALUE self)
 {
   newtFinished();
   initialized = Qfalse;
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_WaitForKey()
+static VALUE rb_ext_Screen_WaitForKey(VALUE self)
 {
   INIT_GUARD();
   newtWaitForKey();
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_ClearKeyBuffer()
+static VALUE rb_ext_Screen_ClearKeyBuffer(VALUE self)
 {
   INIT_GUARD();
   newtClearKeyBuffer();
@@ -414,21 +414,21 @@ static VALUE rb_ext_Screen_SetColor(VALUE self, VALUE colorset, VALUE fg, VALUE 
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_Resume()
+static VALUE rb_ext_Screen_Resume(VALUE self)
 {
   INIT_GUARD();
   newtResume();
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_Suspend()
+static VALUE rb_ext_Screen_Suspend(VALUE self)
 {
   INIT_GUARD();
   newtSuspend();
   return Qnil;
 }
 
-static VALUE rb_ext_Screen_Refresh()
+static VALUE rb_ext_Screen_Refresh(VALUE self)
 {
   INIT_GUARD();
   newtRefresh();
