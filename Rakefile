@@ -13,6 +13,11 @@ Rake::TestTask.new do |t|
   t.libs << 'test'
 end
 
+desc 'Install project build dependencies'
+task 'deps:install' do
+  sh 'bundle check || bundle install'
+end
+
 task :test_interactive do
   scripts = FileList['examples/test*-e.rb', 'examples/test_method/*.rb']
             .select { |name| FileTest.executable?(name) }
