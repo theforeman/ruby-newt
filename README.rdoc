@@ -29,6 +29,9 @@ See http://github.com/theforeman/ruby-newt/tree/master/examples for usage exampl
 
 === Development
 
+Set +BUNDLE_PATH+ and +GEM_HOME+ to a location under <tt>$HOME</tt> to enable
+unprivileged installs. <tt>$HOME/.local/share/gem</tt> is a common location.
+
   $ bundle install
   $ bundle exec rake compile
   $ bundle exec rake test
