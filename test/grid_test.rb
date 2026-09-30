@@ -63,6 +63,27 @@ class TestGrid < Minitest::Test
     assert_nil(grid.set_field(0, 0, Newt::GRID_EMPTY, nil, 0, 0, 0, 0, 0, 0))
   end
 
+  def test_set_subgrid_field
+    subgrid = Newt::Grid.new(1, 1)
+    button = Newt::Button.new(-1, -1, 'Button')
+    subgrid.set_field(0, 0, Newt::GRID_COMPONENT, button, 0, 0, 0, 0, 0, 0)
+    expected_size = subgrid.get_size
+
+    grid = Newt::Grid.new(1, 1)
+    grid.set_field(0, 0, Newt::GRID_SUBGRID, subgrid, 0, 0, 0, 0, 0, 0)
+    subgrid = nil
+    GC.start
+
+    assert_equal(expected_size, grid.get_size)
+  end
+
+  def test_invalid_field_type
+    grid = Newt::Grid.new(1, 1)
+    assert_raises(ArgumentError) do
+      grid.set_field(0, 0, -1, nil, 0, 0, 0, 0, 0, 0)
+    end
+  end
+
   def test_grid_retains_component_wrappers
     grid = Newt::Grid.new(1, 1)
     grid.set_field(0, 0, Newt::GRID_COMPONENT, temporary_button, 0, 0, 0, 0, 0, 0)
