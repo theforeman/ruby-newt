@@ -177,6 +177,23 @@ static inline VALUE get_newt_ivar(VALUE self) {
   return ivar_data;
 }
 
+static void data_detach(VALUE self, VALUE data)
+{
+  VALUE ivar_data;
+  int i;
+
+  if (!rb_ivar_defined(self, IVAR_DATA))
+    return;
+
+  ivar_data = rb_ivar_get(self, IVAR_DATA);
+  for (i = 0; i < RARRAY_LENINT(ivar_data); i++) {
+    if (RARRAY_PTR(ivar_data)[i] == data) {
+      rb_ary_delete_at(ivar_data, i);
+      return;
+    }
+  }
+}
+
 static VALUE rb_ext_Delay(VALUE self, VALUE usecs)
 {
   newtDelay(NUM2UINT(usecs));
@@ -1090,10 +1107,21 @@ static VALUE rb_ext_Listbox_SetWidth(VALUE self, VALUE width)
 static VALUE rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
 {
   newtComponent co;
+  char *text;
+  void *old_data;
+  int index, valid_index;
 
   Get_newtComponent(self, co);
-  Data_Attach(self, data);
-  newtListboxSetData(co, NUM2INT(num), (void *) data);
+  index = NUM2INT(num);
+  valid_index = index >= 0 && index < newtListboxItemCount(co);
+  if (valid_index)
+    newtListboxGetEntry(co, index, &text, &old_data);
+
+  newtListboxSetData(co, index, (void *) data);
+  if (valid_index && old_data != (void *) data) {
+    data_detach(self, (VALUE) old_data);
+    Data_Attach(self, data);
+  }
   return Qnil;
 }
 
@@ -1120,9 +1148,22 @@ static VALUE rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALU
 static VALUE rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
 {
   newtComponent co;
+  char *text;
+  void *entry_data;
+  int i, count, found = 0;
 
   Get_newtComponent(self, co);
+  count = newtListboxItemCount(co);
+  for (i = 0; i < count; i++) {
+    newtListboxGetEntry(co, i, &text, &entry_data);
+    if (entry_data == (void *) data) {
+      found = 1;
+      break;
+    }
+  }
   newtListboxDeleteEntry(co, (void *) data);
+  if (found)
+    data_detach(self, data);
   return Qnil;
 }
 
@@ -1132,6 +1173,8 @@ static VALUE rb_ext_Listbox_Clear(VALUE self)
 
   Get_newtComponent(self, co);
   newtListboxClear(co);
+  if (rb_ivar_defined(self, IVAR_DATA))
+    rb_ary_clear(rb_ivar_get(self, IVAR_DATA));
   return Qnil;
 }
 
