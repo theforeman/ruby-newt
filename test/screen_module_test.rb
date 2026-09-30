@@ -141,6 +141,13 @@ class TestScreenModule < Minitest::Test
       tty.write("\r")
     end
   end
+
+  def test_win_menu_with_nine_items
+    rv = fork_newt_ui(method(:win_menu_many_items_interactive)) do |tty|
+      tty.write("\r")
+    end
+    assert_equal(true, rv)
+  end
   
   def test_win_entries
     fork_newt_ui(method(:win_entries_interactive)) do |tty|
@@ -239,6 +246,11 @@ class TestScreenModule < Minitest::Test
   def win_menu_interactive
     Newt::Screen.win_menu('Menu', 'Text', 50, 5, 5, 3,
                           %w[One Two Three], 'OK')
+  end
+
+  def win_menu_many_items_interactive
+    Newt::Screen.win_menu('Menu', 'Text', 50, 5, 5, 9,
+                          %w[One Two Three Four Five Six Seven Eight Nine], 'OK')
   end
 
   def win_entries_interactive

@@ -516,12 +516,12 @@ static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
   char **cptr;
   char *title, *text, *button1, *button2;
 
-  int len, i, listItem;
+  int argc, item_count, i, listItem;
   int width, flexDown, flexUp, maxHeight;
 
-  len = RARRAY_LENINT(args);
-  if (len < 8 || len > 9)
-    ARG_ERROR(len, "8..9");
+  argc = RARRAY_LENINT(args);
+  if (argc < 8 || argc > 9)
+    ARG_ERROR(argc, "8..9");
 
   INIT_GUARD();
   title = StringValuePtr(RARRAY_PTR(args)[0]);
@@ -533,16 +533,16 @@ static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
 
   Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
 
-  len = RARRAY_LENINT(RARRAY_PTR(args)[6]);
-  cptr = ALLOCA_N(char*, len + 1);
-  for (i = 0; i < len; i++) {
+  item_count = RARRAY_LENINT(RARRAY_PTR(args)[6]);
+  cptr = ALLOCA_N(char*, item_count + 1);
+  for (i = 0; i < item_count; i++) {
     Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
     cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
   }
-  cptr[len] = NULL;
+  cptr[item_count] = NULL;
 
   button1 = StringValuePtr(RARRAY_PTR(args)[7]);
-  button2 = (len == 9) ? StringValuePtr(RARRAY_PTR(args)[8]) : NULL;
+  button2 = (argc == 9) ? StringValuePtr(RARRAY_PTR(args)[8]) : NULL;
 
   newtWinMenu(title, text, width, flexDown, flexUp, maxHeight, cptr, &listItem, button1, button2, NULL);
   return INT2NUM(listItem);
