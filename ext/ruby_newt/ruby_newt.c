@@ -31,6 +31,13 @@ static VALUE cGrid;
 
 static VALUE rb_ext_sCallback;
 static struct newtColors newtColors;
+static VALUE rb_ext_color_values;
+
+#define SET_COLOR_FIELD(field) do { \
+  VALUE stable = rb_obj_freeze(rb_str_dup(StringValue(val))); \
+  rb_hash_aset(rb_ext_color_values, key, stable); \
+  colors->field = StringValuePtr(stable); \
+} while (0)
 
 #define PTR2NUM(ptr)      (SIZET2NUM((size_t)(ptr)))
 #define SYMBOL(str)       (ID2SYM(rb_intern(str)))
@@ -270,133 +277,133 @@ int rb_ext_Colors_callback_function(VALUE key, VALUE val, VALUE in)
   Check_Type(key, T_SYMBOL);
 
   if (key == SYMBOL("rootFg"))
-    colors->rootFg = StringValuePtr(val);
+    SET_COLOR_FIELD(rootFg);
 
   else if (key == SYMBOL("rootBg"))
-    colors->rootBg = StringValuePtr(val);
+    SET_COLOR_FIELD(rootBg);
 
   else if (key == SYMBOL("borderFg"))
-    colors->borderFg = StringValuePtr(val);
+    SET_COLOR_FIELD(borderFg);
 
   else if (key == SYMBOL("borderBg"))
-    colors->borderBg = StringValuePtr(val);
+    SET_COLOR_FIELD(borderBg);
 
   else if (key == SYMBOL("windowFg"))
-    colors->windowFg = StringValuePtr(val);
+    SET_COLOR_FIELD(windowFg);
 
   else if (key == SYMBOL("windowBg"))
-    colors->windowBg = StringValuePtr(val);
+    SET_COLOR_FIELD(windowBg);
 
   else if (key == SYMBOL("shadowFg"))
-    colors->shadowFg = StringValuePtr(val);
+    SET_COLOR_FIELD(shadowFg);
 
   else if (key == SYMBOL("shadowBg"))
-    colors->shadowBg = StringValuePtr(val);
+    SET_COLOR_FIELD(shadowBg);
 
   else if (key == SYMBOL("titleFg"))
-    colors->titleFg = StringValuePtr(val);
+    SET_COLOR_FIELD(titleFg);
 
   else if (key == SYMBOL("titleBg"))
-    colors->titleBg = StringValuePtr(val);
+    SET_COLOR_FIELD(titleBg);
 
   else if (key == SYMBOL("buttonFg"))
-    colors->buttonFg = StringValuePtr(val);
+    SET_COLOR_FIELD(buttonFg);
 
   else if (key == SYMBOL("buttonBg"))
-    colors->buttonBg = StringValuePtr(val);
+    SET_COLOR_FIELD(buttonBg);
 
   else if (key == SYMBOL("actButtonFg"))
-    colors->actButtonFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actButtonFg);
 
   else if (key == SYMBOL("actButtonBg"))
-    colors->actButtonBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actButtonBg);
 
   else if (key == SYMBOL("checkboxFg"))
-    colors->checkboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(checkboxFg);
 
   else if (key == SYMBOL("checkboxBg"))
-    colors->checkboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(checkboxBg);
 
   else if (key == SYMBOL("actCheckboxFg"))
-    colors->actCheckboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actCheckboxFg);
 
   else if (key == SYMBOL("actCheckboxBg"))
-    colors->actCheckboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actCheckboxBg);
 
   else if (key == SYMBOL("entryFg"))
-    colors->entryFg = StringValuePtr(val);
+    SET_COLOR_FIELD(entryFg);
 
   else if (key == SYMBOL("entryBg"))
-    colors->entryBg = StringValuePtr(val);
+    SET_COLOR_FIELD(entryBg);
 
   else if (key == SYMBOL("labelFg"))
-    colors->labelFg = StringValuePtr(val);
+    SET_COLOR_FIELD(labelFg);
 
   else if (key == SYMBOL("labelBg"))
-    colors->labelBg = StringValuePtr(val);
+    SET_COLOR_FIELD(labelBg);
 
   else if (key == SYMBOL("listboxFg"))
-    colors->listboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(listboxFg);
 
   else if (key == SYMBOL("listboxBg"))
-    colors->listboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(listboxBg);
 
   else if (key == SYMBOL("actListboxFg"))
-    colors->actListboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actListboxFg);
 
   else if (key == SYMBOL("actListboxBg"))
-    colors->actListboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actListboxBg);
 
   else if (key == SYMBOL("textboxFg"))
-    colors->textboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(textboxFg);
 
   else if (key == SYMBOL("textboxBg"))
-    colors->textboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(textboxBg);
 
   else if (key == SYMBOL("actTextboxFg"))
-    colors->actTextboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actTextboxFg);
 
   else if (key == SYMBOL("actTextboxBg"))
-    colors->actTextboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actTextboxBg);
 
   else if (key == SYMBOL("helpLineFg"))
-    colors->helpLineFg = StringValuePtr(val);
+    SET_COLOR_FIELD(helpLineFg);
 
   else if (key == SYMBOL("helpLineBg"))
-    colors->helpLineBg = StringValuePtr(val);
+    SET_COLOR_FIELD(helpLineBg);
 
   else if (key == SYMBOL("rootTextBg"))
-    colors->rootTextBg = StringValuePtr(val);
+    SET_COLOR_FIELD(rootTextBg);
 
   else if (key == SYMBOL("emptyScale"))
-    colors->emptyScale = StringValuePtr(val);
+    SET_COLOR_FIELD(emptyScale);
 
   else if (key == SYMBOL("fullScale"))
-    colors->fullScale = StringValuePtr(val);
+    SET_COLOR_FIELD(fullScale);
 
   else if (key == SYMBOL("disabledEntryFg"))
-    colors->disabledEntryFg = StringValuePtr(val);
+    SET_COLOR_FIELD(disabledEntryFg);
 
   else if (key == SYMBOL("disabledEntryBg"))
-    colors->disabledEntryBg = StringValuePtr(val);
+    SET_COLOR_FIELD(disabledEntryBg);
 
   else if (key == SYMBOL("compactButtonFg"))
-    colors->compactButtonFg = StringValuePtr(val);
+    SET_COLOR_FIELD(compactButtonFg);
 
   else if (key == SYMBOL("compactButtonBg"))
-    colors->compactButtonBg = StringValuePtr(val);
+    SET_COLOR_FIELD(compactButtonBg);
 
   else if (key == SYMBOL("actSelListboxFg"))
-    colors->actSelListboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actSelListboxFg);
 
   else if (key == SYMBOL("actSelListboxBg"))
-    colors->actSelListboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actSelListboxBg);
 
   else if (key == SYMBOL("selListboxFg"))
-    colors->selListboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(selListboxFg);
 
   else if (key == SYMBOL("selListboxBg"))
-    colors->selListboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(selListboxBg);
 
   return ST_CONTINUE;
 }
@@ -1792,6 +1799,8 @@ static VALUE rb_ext_Grid_GetSize(VALUE self)
 }
 
 void Init_ruby_newt(){
+  rb_ext_color_values = rb_hash_new();
+  rb_global_variable(&rb_ext_color_values);
   mNewt = rb_define_module("Newt");
   rb_define_module_function(mNewt, "init", rb_ext_Screen_Init, 0);
   rb_define_module_function(mNewt, "finish", rb_ext_Screen_Finished, 0);
