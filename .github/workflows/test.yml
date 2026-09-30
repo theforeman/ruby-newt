@@ -2,11 +2,15 @@ name: Test
 
 on:
   push:
+    branches:
+      - master
   pull_request:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      TERM: xterm
     strategy:
       fail-fast: false
       matrix:
