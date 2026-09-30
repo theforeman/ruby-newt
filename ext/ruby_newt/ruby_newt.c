@@ -1551,7 +1551,8 @@ static VALUE rb_ext_Form_WatchFd(VALUE self, VALUE io, VALUE flags)
     rb_raise(rb_eTypeError, "neither IO nor file descriptor");
 
   Get_newtComponent(self, form);
-  fd = NUM2INT(rb_funcall(io, rb_intern("fileno"), 0));
+  fd = TYPE(io) == T_FIXNUM ? NUM2INT(io) :
+       NUM2INT(rb_funcall(io, rb_intern("fileno"), 0));
   newtFormWatchFd(form, fd, NUM2INT(flags));
   return Qnil;
 }

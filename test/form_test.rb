@@ -93,6 +93,10 @@ class TestForm < Minitest::Test
     assert_equal(true, rv)
   end
 
+  def test_watch_fd_with_integer
+    @f.watch_fd(0, Newt::FD_READ)
+  end
+
   def test_component_type
     rv = fork_newt_ui(method(:form_component_interactive)) do |tty|
       tty.write("\r")
