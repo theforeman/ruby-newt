@@ -57,6 +57,14 @@ class TestGrid < Minitest::Test
     grid.set_field(1, 0, Newt::GRID_COMPONENT, b2, 0, 0, 0, 0, 0, 0)
   end
 
+  def test_grid_retains_component_wrappers
+    grid = Newt::Grid.new(1, 1)
+    grid.set_field(0, 0, Newt::GRID_COMPONENT, temporary_button, 0, 0, 0, 0, 0, 0)
+
+    GC.start
+    assert_equal(2, grid.get_size.length)
+  end
+
   def test_wrapped_window
     b1 = Newt::Button.new(-1, -1, 'Button1')
     b2 = Newt::Button.new(-1, -1, 'Button2')
@@ -85,6 +93,12 @@ class TestGrid < Minitest::Test
     grid.set_field(0, 0, Newt::GRID_COMPONENT, b1, 0, 0, 0, 0, 0, 0)
     grid.set_field(1, 0, Newt::GRID_COMPONENT, b2, 0, 0, 0, 0, 0, 0)
     assert_equal([24, 4], grid.get_size)
+  end
+
+  private
+
+  def temporary_button
+    Newt::Button.new(-1, -1, 'B')
   end
 end
 

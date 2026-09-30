@@ -1751,6 +1751,7 @@ static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, 
   newtGridSetField(grid, icol, irow, itype, co, NUM2INT(padLeft),
                    NUM2INT(padTop), NUM2INT(padRight), NUM2INT(padBottom),
                    NUM2INT(anchor), NUM2INT(flags));
+  Data_Attach(self, val);
 
   return Qnil;
 }
