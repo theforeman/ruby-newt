@@ -36,13 +36,13 @@ static struct newtColors newtColors;
 #define SYMBOL(str)       (ID2SYM(rb_intern(str)))
 #define PROC_CALL         (rb_intern("call"))
 #define RECEIVER(context) (rb_funcall((context), rb_intern("receiver"), 0))
-#define IVAR_DATA   (rb_intern("newt_ivar_data"))
-#define IVAR_COLS   (rb_intern("newt_ivar_cols"))
-#define IVAR_ROWS   (rb_intern("newt_ivar_rows"))
-#define CVAR_SUSPEND_CALLBACK (rb_intern("newt_cvar_suspend_callback"))
-#define CVAR_HELP_CALLBACK    (rb_intern("newt_cvar_help_callback"))
-#define IVAR_FILTER_CALLBACK  (rb_intern("newt_ivar_filter_callback"))
-#define IVAR_WIDGET_CALLBACK  (rb_intern("newt_ivar_widget_callback"))
+#define IVAR_DATA   (rb_intern("@newt_ivar_data"))
+#define IVAR_COLS   (rb_intern("@newt_ivar_cols"))
+#define IVAR_ROWS   (rb_intern("@newt_ivar_rows"))
+#define CVAR_SUSPEND_CALLBACK (rb_intern("@@newt_cvar_suspend_callback"))
+#define CVAR_HELP_CALLBACK    (rb_intern("@@newt_cvar_help_callback"))
+#define IVAR_FILTER_CALLBACK  (rb_intern("@newt_ivar_filter_callback"))
+#define IVAR_WIDGET_CALLBACK  (rb_intern("@newt_ivar_widget_callback"))
 
 #define ARG_ERROR(given, expected) \
   rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected %s)", \
@@ -1411,7 +1411,7 @@ static VALUE rb_ext_TextboxReflowed_new(int argc, VALUE *argv, VALUE self)
 static VALUE rb_ext_Form_new(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
-  VALUE helpTag;
+  VALUE helpTag, form;
   int flags = 0;
 
   if (argc > 3)
@@ -1423,7 +1423,9 @@ static VALUE rb_ext_Form_new(int argc, VALUE *argv, VALUE self)
 
   /* Can't determine how Form scrollbars work, so just pass NULL. */
   co = newtForm(NULL, (void *) helpTag, flags);
-  return Make_Widget(self, co);
+  form = Make_Widget(self, co);
+  Data_Attach(form, helpTag);
+  return form;
 }
 
 static VALUE rb_ext_Form_SetBackground(VALUE self, VALUE color)

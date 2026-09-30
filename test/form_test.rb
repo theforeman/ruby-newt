@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
+require 'weakref'
 require 'test_helper'
 require 'newt'
 
@@ -22,6 +23,17 @@ class TestForm < Minitest::Test
 
   def test_new
     Newt::Form.new
+  end
+
+  def test_help_tag_is_retained
+    help_tag = Object.new
+    weak_tag = WeakRef.new(help_tag)
+    form = Newt::Form.new(nil, help_tag)
+    help_tag = nil
+
+    GC.start
+    assert_equal(true, weak_tag.weakref_alive?)
+    assert_kind_of(Newt::Form, form)
   end
 
   def test_set_background
