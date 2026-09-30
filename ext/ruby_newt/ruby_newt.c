@@ -1083,9 +1083,14 @@ static VALUE rb_ext_Listbox_GetEntry(VALUE self, VALUE num)
 {
   char *text; void *data;
   newtComponent co;
+  int index;
 
   Get_newtComponent(self, co);
-  newtListboxGetEntry(co, NUM2INT(num), &text, &data);
+  index = NUM2INT(num);
+  if (index < 0 || index >= newtListboxItemCount(co))
+    rb_raise(rb_eIndexError, "listbox index out of range");
+
+  newtListboxGetEntry(co, index, &text, &data);
   return rb_ary_new_from_args(2, rb_str_new2(text), (VALUE *) data);
 }
 

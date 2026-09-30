@@ -116,6 +116,11 @@ class TestListbox < Minitest::Test
     assert_equal(['item3', 3], @lb.get(2))
   end
 
+  def test_get_rejects_out_of_range_indexes
+    assert_raises(IndexError) { @lb.get(-1) }
+    assert_raises(IndexError) { @lb.get(@lb.item_count) }
+  end
+
   def test_set
     @lb.set(2, 'newitem3')
     assert_equal(['newitem3', 3], @lb.get(2))
