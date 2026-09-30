@@ -1138,6 +1138,7 @@ static VALUE rb_ext_Listbox_GetSelection(VALUE self)
       item = (VALUE) items[i];
       rb_ary_push(ary, item);
   }
+  free(items);
   return ary;
 }
 
