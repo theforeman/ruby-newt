@@ -33,6 +33,17 @@ class TestGrid < Minitest::Test
     end
   end
 
+  def test_invalid_negative_field_position
+    grid = Newt::Grid.new(2, 1)
+    b = Newt::Button.new(-1, -1, 'Button')
+
+    [[-1, 0], [0, -1]].each do |col, row|
+      assert_raises(RuntimeError) do
+        grid.set_field(col, row, Newt::GRID_COMPONENT, b, 0, 0, 0, 0, 0, 0)
+      end
+    end
+  end
+
   def test_new
     Newt::Grid.new(2, 2)
   end

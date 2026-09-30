@@ -1724,7 +1724,7 @@ static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, 
 
   cols = NUM2INT(rb_ivar_get(self, IVAR_COLS));
   rows = NUM2INT(rb_ivar_get(self, IVAR_ROWS));
-  if (icol >= cols || irow >= rows)
+  if (icol < 0 || irow < 0 || icol >= cols || irow >= rows)
     rb_raise(rb_eRuntimeError, "attempting to set a field at an invalid position (%d, %d)", icol, irow);
 
   INIT_GUARD();
