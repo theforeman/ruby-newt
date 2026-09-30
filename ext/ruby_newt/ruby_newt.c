@@ -389,6 +389,9 @@ int rb_ext_Colors_callback_function(VALUE key, VALUE val, VALUE in)
   else if (key == SYMBOL("helpLineBg"))
     SET_COLOR_FIELD(helpLineBg);
 
+  else if (key == SYMBOL("rootTextFg"))
+    SET_COLOR_FIELD(rootTextFg);
+
   else if (key == SYMBOL("rootTextBg"))
     SET_COLOR_FIELD(rootTextBg);
 

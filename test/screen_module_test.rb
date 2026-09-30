@@ -40,7 +40,7 @@ class TestScreenModule < Minitest::Test
   end
 
   def test_set_colors
-    Newt::Screen.set_colors(borderFg: 'yellow', borderBg: 'cyan')
+    Newt::Screen.set_colors(borderFg: 'yellow', borderBg: 'cyan', rootTextFg: 'white')
   end
 
   def test_set_colors_after_garbage_collection
