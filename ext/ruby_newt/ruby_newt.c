@@ -3,6 +3,7 @@
  */
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <ruby.h>
 #include <newt.h>
 
@@ -178,12 +179,15 @@ static VALUE rb_ext_Delay(VALUE self, VALUE usecs)
 static VALUE rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp)
 {
   char *p;
+  VALUE flowed_text;
   int actualWidth, actualHeight;
 
   p = newtReflowText(StringValuePtr(text), NUM2INT(width), NUM2INT(flexDown),
                      NUM2INT(flexUp), &actualWidth, &actualHeight);
 
-  return rb_ary_new_from_args(3, rb_str_new2(p), INT2NUM(actualWidth), INT2NUM(actualHeight));
+  flowed_text = rb_str_new2(p);
+  free(p);
+  return rb_ary_new_from_args(3, flowed_text, INT2NUM(actualWidth), INT2NUM(actualHeight));
 }
 
 static VALUE rb_ext_ColorSetCustom(VALUE self, VALUE id)
