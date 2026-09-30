@@ -592,7 +592,11 @@ static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
 
   ary = rb_ary_new();
   newtWinEntries(title, text, width, flexDown, flexUp, dataWidth, items, button1, button2, NULL);
-  for (i = 0; i < len; i++) { rb_ary_push(ary, rb_str_new2(entries[i])); }
+  for (i = 0; i < len; i++) {
+    VALUE entry = entries[i] ? rb_str_new2(entries[i]) : rb_str_new_cstr("");
+    free(entries[i]);
+    rb_ary_push(ary, entry);
+  }
   return ary;
 }
 
