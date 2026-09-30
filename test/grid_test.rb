@@ -57,6 +57,12 @@ class TestGrid < Minitest::Test
     grid.set_field(1, 0, Newt::GRID_COMPONENT, b2, 0, 0, 0, 0, 0, 0)
   end
 
+  def test_set_empty_field
+    grid = Newt::Grid.new(1, 1)
+
+    assert_nil(grid.set_field(0, 0, Newt::GRID_EMPTY, nil, 0, 0, 0, 0, 0, 0))
+  end
+
   def test_grid_retains_component_wrappers
     grid = Newt::Grid.new(1, 1)
     grid.set_field(0, 0, Newt::GRID_COMPONENT, temporary_button, 0, 0, 0, 0, 0, 0)

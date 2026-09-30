@@ -1742,16 +1742,21 @@ static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, 
   INIT_GUARD();
   if (itype == NEWT_GRID_SUBGRID) {
     Data_Get_Struct(val, struct grid_s, co);
-  } else {
+  } else if (itype == NEWT_GRID_COMPONENT) {
     Get_Widget_Data(val, co);
     co = ((Widget_data *) co)->co;
+  } else if (itype == NEWT_GRID_EMPTY) {
+    co = NULL;
+  } else {
+    rb_raise(rb_eArgError, "invalid grid field type: %d", itype);
   }
 
   Data_Get_Struct(self, struct grid_s, grid);
   newtGridSetField(grid, icol, irow, itype, co, NUM2INT(padLeft),
                    NUM2INT(padTop), NUM2INT(padRight), NUM2INT(padBottom),
                    NUM2INT(anchor), NUM2INT(flags));
-  Data_Attach(self, val);
+  if (itype != NEWT_GRID_EMPTY)
+    Data_Attach(self, val);
 
   return Qnil;
 }
