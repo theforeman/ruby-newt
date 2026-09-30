@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
+require 'weakref'
 require 'test_helper'
 require 'newt'
 
@@ -22,6 +23,17 @@ class TestForm < Minitest::Test
 
   def test_new
     Newt::Form.new
+  end
+
+  def test_help_tag_is_retained
+    help_tag = Object.new
+    weak_tag = WeakRef.new(help_tag)
+    form = Newt::Form.new(nil, help_tag)
+    help_tag = nil
+
+    GC.start
+    assert_equal(true, weak_tag.weakref_alive?)
+    assert_kind_of(Newt::Form, form)
   end
 
   def test_set_background
@@ -84,13 +96,18 @@ class TestForm < Minitest::Test
 
   def test_set_timer
     time = Time.now
-    fork_newt_ui(method(:form_timer_interactive))
+    rv = fork_newt_ui(method(:form_timer_interactive))
+    assert_equal(true, rv)
     assert_in_delta(1, Time.now - time, 0.01)
   end
 
   def test_watch_fd
     rv = fork_newt_ui(method(:form_watch_fd_interactive))
     assert_equal(true, rv)
+  end
+
+  def test_watch_fd_with_integer
+    @f.watch_fd(0, Newt::FD_READ)
   end
 
   def test_component_type
@@ -116,7 +133,8 @@ class TestForm < Minitest::Test
     f.add_hotkey(Newt::KEY_F10)
     f.add(b)
     rv = f.run
-    rv.reason == Newt::EXIT_HOTKEY
+    rv.reason == Newt::EXIT_HOTKEY && rv.key == Newt::KEY_F10 &&
+      rv.component.nil? && rv.inspect.include?('key=')
   end
 
   def form_timer_interactive
@@ -124,7 +142,8 @@ class TestForm < Minitest::Test
     f = Newt::Form.new
     f.set_timer(1000)
     f.add(b)
-    f.run
+    rv = f.run
+    rv.reason == Newt::EXIT_TIMER && rv.component.nil? && rv.inspect.include?('reason=')
   end
 
   def form_watch_fd_interactive
@@ -134,7 +153,8 @@ class TestForm < Minitest::Test
     file = File.open('/dev/null', 'r')
     f.watch_fd(file, Newt::FD_READ)
     rv = f.run
-    rv.reason == Newt::EXIT_FDREADY
+    rv.reason == Newt::EXIT_FDREADY && rv.watch == file.fileno &&
+      rv.component.nil? && rv.key.nil? && rv.inspect.include?('watch=')
   end
 
   def form_component_interactive
@@ -142,7 +162,9 @@ class TestForm < Minitest::Test
     f = Newt::Form.new
     f.add(b)
     rv = f.run
-    rv.component.class == Newt::Button
+    other = Newt::Button.new(1, 2, 'Other')
+    rv.component.class == Newt::Button && rv.component == b && rv == b && rv != other &&
+      rv.watch.nil? && rv.key.nil? && rv.inspect.include?('component=')
   end
 end
 

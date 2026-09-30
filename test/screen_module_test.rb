@@ -40,7 +40,16 @@ class TestScreenModule < Minitest::Test
   end
 
   def test_set_colors
-    Newt::Screen.set_colors(borderFg: 'yellow', borderBg: 'cyan')
+    Newt::Screen.set_colors(borderFg: 'yellow', borderBg: 'cyan', rootTextFg: 'white')
+  end
+
+  def test_set_colors_after_garbage_collection
+    color = String.new('yellow')
+    Newt::Screen.set_colors(borderFg: color)
+
+    color = nil
+    GC.start
+    Newt::Screen.set_colors(borderBg: 'cyan')
   end
 
   def test_set_color
@@ -141,6 +150,13 @@ class TestScreenModule < Minitest::Test
       tty.write("\r")
     end
   end
+
+  def test_win_menu_with_nine_items
+    rv = fork_newt_ui(method(:win_menu_many_items_interactive)) do |tty|
+      tty.write("\r")
+    end
+    assert_equal(true, rv)
+  end
   
   def test_win_entries
     fork_newt_ui(method(:win_entries_interactive)) do |tty|
@@ -239,6 +255,11 @@ class TestScreenModule < Minitest::Test
   def win_menu_interactive
     Newt::Screen.win_menu('Menu', 'Text', 50, 5, 5, 3,
                           %w[One Two Three], 'OK')
+  end
+
+  def win_menu_many_items_interactive
+    Newt::Screen.win_menu('Menu', 'Text', 50, 5, 5, 9,
+                          %w[One Two Three Four Five Six Seven Eight Nine], 'OK')
   end
 
   def win_entries_interactive

@@ -3,6 +3,7 @@
  */
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <ruby.h>
 #include <newt.h>
 
@@ -30,18 +31,25 @@ static VALUE cGrid;
 
 static VALUE rb_ext_sCallback;
 static struct newtColors newtColors;
+static VALUE rb_ext_color_values;
+
+#define SET_COLOR_FIELD(field) do { \
+  VALUE stable = rb_obj_freeze(rb_str_dup(StringValue(val))); \
+  rb_hash_aset(rb_ext_color_values, key, stable); \
+  colors->field = StringValuePtr(stable); \
+} while (0)
 
 #define PTR2NUM(ptr)      (SIZET2NUM((size_t)(ptr)))
 #define SYMBOL(str)       (ID2SYM(rb_intern(str)))
 #define PROC_CALL         (rb_intern("call"))
 #define RECEIVER(context) (rb_funcall((context), rb_intern("receiver"), 0))
-#define IVAR_DATA   (rb_intern("newt_ivar_data"))
-#define IVAR_COLS   (rb_intern("newt_ivar_cols"))
-#define IVAR_ROWS   (rb_intern("newt_ivar_rows"))
-#define CVAR_SUSPEND_CALLBACK (rb_intern("newt_cvar_suspend_callback"))
-#define CVAR_HELP_CALLBACK    (rb_intern("newt_cvar_help_callback"))
-#define IVAR_FILTER_CALLBACK  (rb_intern("newt_ivar_filter_callback"))
-#define IVAR_WIDGET_CALLBACK  (rb_intern("newt_ivar_widget_callback"))
+#define IVAR_DATA   (rb_intern("@newt_ivar_data"))
+#define IVAR_COLS   (rb_intern("@newt_ivar_cols"))
+#define IVAR_ROWS   (rb_intern("@newt_ivar_rows"))
+#define CVAR_SUSPEND_CALLBACK (rb_intern("@@newt_cvar_suspend_callback"))
+#define CVAR_HELP_CALLBACK    (rb_intern("@@newt_cvar_help_callback"))
+#define IVAR_FILTER_CALLBACK  (rb_intern("@newt_ivar_filter_callback"))
+#define IVAR_WIDGET_CALLBACK  (rb_intern("@newt_ivar_widget_callback"))
 
 #define ARG_ERROR(given, expected) \
   rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected %s)", \
@@ -169,6 +177,23 @@ static inline VALUE get_newt_ivar(VALUE self) {
   return ivar_data;
 }
 
+static void data_detach(VALUE self, VALUE data)
+{
+  VALUE ivar_data;
+  int i;
+
+  if (!rb_ivar_defined(self, IVAR_DATA))
+    return;
+
+  ivar_data = rb_ivar_get(self, IVAR_DATA);
+  for (i = 0; i < RARRAY_LENINT(ivar_data); i++) {
+    if (RARRAY_PTR(ivar_data)[i] == data) {
+      rb_ary_delete_at(ivar_data, i);
+      return;
+    }
+  }
+}
+
 static VALUE rb_ext_Delay(VALUE self, VALUE usecs)
 {
   newtDelay(NUM2UINT(usecs));
@@ -178,12 +203,15 @@ static VALUE rb_ext_Delay(VALUE self, VALUE usecs)
 static VALUE rb_ext_ReflowText(VALUE self, VALUE text, VALUE width, VALUE flexDown, VALUE flexUp)
 {
   char *p;
+  VALUE flowed_text;
   int actualWidth, actualHeight;
 
   p = newtReflowText(StringValuePtr(text), NUM2INT(width), NUM2INT(flexDown),
                      NUM2INT(flexUp), &actualWidth, &actualHeight);
 
-  return rb_ary_new_from_args(3, rb_str_new2(p), INT2NUM(actualWidth), INT2NUM(actualHeight));
+  flowed_text = rb_str_new2(p);
+  free(p);
+  return rb_ary_new_from_args(3, flowed_text, INT2NUM(actualWidth), INT2NUM(actualHeight));
 }
 
 static VALUE rb_ext_ColorSetCustom(VALUE self, VALUE id)
@@ -266,133 +294,136 @@ int rb_ext_Colors_callback_function(VALUE key, VALUE val, VALUE in)
   Check_Type(key, T_SYMBOL);
 
   if (key == SYMBOL("rootFg"))
-    colors->rootFg = StringValuePtr(val);
+    SET_COLOR_FIELD(rootFg);
 
   else if (key == SYMBOL("rootBg"))
-    colors->rootBg = StringValuePtr(val);
+    SET_COLOR_FIELD(rootBg);
 
   else if (key == SYMBOL("borderFg"))
-    colors->borderFg = StringValuePtr(val);
+    SET_COLOR_FIELD(borderFg);
 
   else if (key == SYMBOL("borderBg"))
-    colors->borderBg = StringValuePtr(val);
+    SET_COLOR_FIELD(borderBg);
 
   else if (key == SYMBOL("windowFg"))
-    colors->windowFg = StringValuePtr(val);
+    SET_COLOR_FIELD(windowFg);
 
   else if (key == SYMBOL("windowBg"))
-    colors->windowBg = StringValuePtr(val);
+    SET_COLOR_FIELD(windowBg);
 
   else if (key == SYMBOL("shadowFg"))
-    colors->shadowFg = StringValuePtr(val);
+    SET_COLOR_FIELD(shadowFg);
 
   else if (key == SYMBOL("shadowBg"))
-    colors->shadowBg = StringValuePtr(val);
+    SET_COLOR_FIELD(shadowBg);
 
   else if (key == SYMBOL("titleFg"))
-    colors->titleFg = StringValuePtr(val);
+    SET_COLOR_FIELD(titleFg);
 
   else if (key == SYMBOL("titleBg"))
-    colors->titleBg = StringValuePtr(val);
+    SET_COLOR_FIELD(titleBg);
 
   else if (key == SYMBOL("buttonFg"))
-    colors->buttonFg = StringValuePtr(val);
+    SET_COLOR_FIELD(buttonFg);
 
   else if (key == SYMBOL("buttonBg"))
-    colors->buttonBg = StringValuePtr(val);
+    SET_COLOR_FIELD(buttonBg);
 
   else if (key == SYMBOL("actButtonFg"))
-    colors->actButtonFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actButtonFg);
 
   else if (key == SYMBOL("actButtonBg"))
-    colors->actButtonBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actButtonBg);
 
   else if (key == SYMBOL("checkboxFg"))
-    colors->checkboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(checkboxFg);
 
   else if (key == SYMBOL("checkboxBg"))
-    colors->checkboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(checkboxBg);
 
   else if (key == SYMBOL("actCheckboxFg"))
-    colors->actCheckboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actCheckboxFg);
 
   else if (key == SYMBOL("actCheckboxBg"))
-    colors->actCheckboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actCheckboxBg);
 
   else if (key == SYMBOL("entryFg"))
-    colors->entryFg = StringValuePtr(val);
+    SET_COLOR_FIELD(entryFg);
 
   else if (key == SYMBOL("entryBg"))
-    colors->entryBg = StringValuePtr(val);
+    SET_COLOR_FIELD(entryBg);
 
   else if (key == SYMBOL("labelFg"))
-    colors->labelFg = StringValuePtr(val);
+    SET_COLOR_FIELD(labelFg);
 
   else if (key == SYMBOL("labelBg"))
-    colors->labelBg = StringValuePtr(val);
+    SET_COLOR_FIELD(labelBg);
 
   else if (key == SYMBOL("listboxFg"))
-    colors->listboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(listboxFg);
 
   else if (key == SYMBOL("listboxBg"))
-    colors->listboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(listboxBg);
 
   else if (key == SYMBOL("actListboxFg"))
-    colors->actListboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actListboxFg);
 
   else if (key == SYMBOL("actListboxBg"))
-    colors->actListboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actListboxBg);
 
   else if (key == SYMBOL("textboxFg"))
-    colors->textboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(textboxFg);
 
   else if (key == SYMBOL("textboxBg"))
-    colors->textboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(textboxBg);
 
   else if (key == SYMBOL("actTextboxFg"))
-    colors->actTextboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actTextboxFg);
 
   else if (key == SYMBOL("actTextboxBg"))
-    colors->actTextboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actTextboxBg);
 
   else if (key == SYMBOL("helpLineFg"))
-    colors->helpLineFg = StringValuePtr(val);
+    SET_COLOR_FIELD(helpLineFg);
 
   else if (key == SYMBOL("helpLineBg"))
-    colors->helpLineBg = StringValuePtr(val);
+    SET_COLOR_FIELD(helpLineBg);
+
+  else if (key == SYMBOL("rootTextFg"))
+    SET_COLOR_FIELD(rootTextFg);
 
   else if (key == SYMBOL("rootTextBg"))
-    colors->rootTextBg = StringValuePtr(val);
+    SET_COLOR_FIELD(rootTextBg);
 
   else if (key == SYMBOL("emptyScale"))
-    colors->emptyScale = StringValuePtr(val);
+    SET_COLOR_FIELD(emptyScale);
 
   else if (key == SYMBOL("fullScale"))
-    colors->fullScale = StringValuePtr(val);
+    SET_COLOR_FIELD(fullScale);
 
   else if (key == SYMBOL("disabledEntryFg"))
-    colors->disabledEntryFg = StringValuePtr(val);
+    SET_COLOR_FIELD(disabledEntryFg);
 
   else if (key == SYMBOL("disabledEntryBg"))
-    colors->disabledEntryBg = StringValuePtr(val);
+    SET_COLOR_FIELD(disabledEntryBg);
 
   else if (key == SYMBOL("compactButtonFg"))
-    colors->compactButtonFg = StringValuePtr(val);
+    SET_COLOR_FIELD(compactButtonFg);
 
   else if (key == SYMBOL("compactButtonBg"))
-    colors->compactButtonBg = StringValuePtr(val);
+    SET_COLOR_FIELD(compactButtonBg);
 
   else if (key == SYMBOL("actSelListboxFg"))
-    colors->actSelListboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(actSelListboxFg);
 
   else if (key == SYMBOL("actSelListboxBg"))
-    colors->actSelListboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(actSelListboxBg);
 
   else if (key == SYMBOL("selListboxFg"))
-    colors->selListboxFg = StringValuePtr(val);
+    SET_COLOR_FIELD(selListboxFg);
 
   else if (key == SYMBOL("selListboxBg"))
-    colors->selListboxBg = StringValuePtr(val);
+    SET_COLOR_FIELD(selListboxBg);
 
   return ST_CONTINUE;
 }
@@ -516,12 +547,12 @@ static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
   char **cptr;
   char *title, *text, *button1, *button2;
 
-  int len, i, listItem;
+  int argc, item_count, i, listItem;
   int width, flexDown, flexUp, maxHeight;
 
-  len = RARRAY_LENINT(args);
-  if (len < 8 || len > 9)
-    ARG_ERROR(len, "8..9");
+  argc = RARRAY_LENINT(args);
+  if (argc < 8 || argc > 9)
+    ARG_ERROR(argc, "8..9");
 
   INIT_GUARD();
   title = StringValuePtr(RARRAY_PTR(args)[0]);
@@ -533,16 +564,16 @@ static VALUE rb_ext_Screen_WinMenu(VALUE self, VALUE args)
 
   Check_Type(RARRAY_PTR(args)[6], T_ARRAY);
 
-  len = RARRAY_LENINT(RARRAY_PTR(args)[6]);
-  cptr = ALLOCA_N(char*, len + 1);
-  for (i = 0; i < len; i++) {
+  item_count = RARRAY_LENINT(RARRAY_PTR(args)[6]);
+  cptr = ALLOCA_N(char*, item_count + 1);
+  for (i = 0; i < item_count; i++) {
     Check_Type(RARRAY_PTR(RARRAY_PTR(args)[6])[i], T_STRING);
     cptr[i] = StringValuePtr(RARRAY_PTR(RARRAY_PTR(args)[6])[i]);
   }
-  cptr[len] = NULL;
+  cptr[item_count] = NULL;
 
   button1 = StringValuePtr(RARRAY_PTR(args)[7]);
-  button2 = (len == 9) ? StringValuePtr(RARRAY_PTR(args)[8]) : NULL;
+  button2 = (argc == 9) ? StringValuePtr(RARRAY_PTR(args)[8]) : NULL;
 
   newtWinMenu(title, text, width, flexDown, flexUp, maxHeight, cptr, &listItem, button1, button2, NULL);
   return INT2NUM(listItem);
@@ -588,7 +619,11 @@ static VALUE rb_ext_Screen_WinEntries(VALUE self, VALUE args)
 
   ary = rb_ary_new();
   newtWinEntries(title, text, width, flexDown, flexUp, dataWidth, items, button1, button2, NULL);
-  for (i = 0; i < len; i++) { rb_ary_push(ary, rb_str_new2(entries[i])); }
+  for (i = 0; i < len; i++) {
+    VALUE entry = entries[i] ? rb_str_new2(entries[i]) : rb_str_new_cstr("");
+    free(entries[i]);
+    rb_ary_push(ary, entry);
+  }
   return ary;
 }
 
@@ -1048,9 +1083,14 @@ static VALUE rb_ext_Listbox_GetEntry(VALUE self, VALUE num)
 {
   char *text; void *data;
   newtComponent co;
+  int index;
 
   Get_newtComponent(self, co);
-  newtListboxGetEntry(co, NUM2INT(num), &text, &data);
+  index = NUM2INT(num);
+  if (index < 0 || index >= newtListboxItemCount(co))
+    rb_raise(rb_eIndexError, "listbox index out of range");
+
+  newtListboxGetEntry(co, index, &text, &data);
   return rb_ary_new_from_args(2, rb_str_new2(text), (VALUE *) data);
 }
 
@@ -1075,10 +1115,21 @@ static VALUE rb_ext_Listbox_SetWidth(VALUE self, VALUE width)
 static VALUE rb_ext_Listbox_SetData(VALUE self, VALUE num, VALUE data)
 {
   newtComponent co;
+  char *text;
+  void *old_data;
+  int index, valid_index;
 
   Get_newtComponent(self, co);
-  Data_Attach(self, data);
-  newtListboxSetData(co, NUM2INT(num), (void *) data);
+  index = NUM2INT(num);
+  valid_index = index >= 0 && index < newtListboxItemCount(co);
+  if (valid_index)
+    newtListboxGetEntry(co, index, &text, &old_data);
+
+  newtListboxSetData(co, index, (void *) data);
+  if (valid_index && old_data != (void *) data) {
+    data_detach(self, (VALUE) old_data);
+    Data_Attach(self, data);
+  }
   return Qnil;
 }
 
@@ -1105,9 +1156,22 @@ static VALUE rb_ext_Listbox_InsertEntry(VALUE self, VALUE text, VALUE data, VALU
 static VALUE rb_ext_Listbox_DeleteEntry(VALUE self, VALUE data)
 {
   newtComponent co;
+  char *text;
+  void *entry_data;
+  int i, count, found = 0;
 
   Get_newtComponent(self, co);
+  count = newtListboxItemCount(co);
+  for (i = 0; i < count; i++) {
+    newtListboxGetEntry(co, i, &text, &entry_data);
+    if (entry_data == (void *) data) {
+      found = 1;
+      break;
+    }
+  }
   newtListboxDeleteEntry(co, (void *) data);
+  if (found)
+    data_detach(self, data);
   return Qnil;
 }
 
@@ -1117,6 +1181,8 @@ static VALUE rb_ext_Listbox_Clear(VALUE self)
 
   Get_newtComponent(self, co);
   newtListboxClear(co);
+  if (rb_ivar_defined(self, IVAR_DATA))
+    rb_ary_clear(rb_ivar_get(self, IVAR_DATA));
   return Qnil;
 }
 
@@ -1134,6 +1200,7 @@ static VALUE rb_ext_Listbox_GetSelection(VALUE self)
       item = (VALUE) items[i];
       rb_ary_push(ary, item);
   }
+  free(items);
   return ary;
 }
 
@@ -1402,7 +1469,7 @@ static VALUE rb_ext_TextboxReflowed_new(int argc, VALUE *argv, VALUE self)
 static VALUE rb_ext_Form_new(int argc, VALUE *argv, VALUE self)
 {
   newtComponent co;
-  VALUE helpTag;
+  VALUE helpTag, form;
   int flags = 0;
 
   if (argc > 3)
@@ -1414,7 +1481,9 @@ static VALUE rb_ext_Form_new(int argc, VALUE *argv, VALUE self)
 
   /* Can't determine how Form scrollbars work, so just pass NULL. */
   co = newtForm(NULL, (void *) helpTag, flags);
-  return Make_Widget(self, co);
+  form = Make_Widget(self, co);
+  Data_Attach(form, helpTag);
+  return form;
 }
 
 static VALUE rb_ext_Form_SetBackground(VALUE self, VALUE color)
@@ -1551,7 +1620,8 @@ static VALUE rb_ext_Form_WatchFd(VALUE self, VALUE io, VALUE flags)
     rb_raise(rb_eTypeError, "neither IO nor file descriptor");
 
   Get_newtComponent(self, form);
-  fd = NUM2INT(rb_funcall(io, rb_intern("fileno"), 0));
+  fd = TYPE(io) == T_FIXNUM ? NUM2INT(io) :
+       NUM2INT(rb_funcall(io, rb_intern("fileno"), 0));
   newtFormWatchFd(form, fd, NUM2INT(flags));
   return Qnil;
 }
@@ -1724,21 +1794,27 @@ static VALUE rb_ext_Grid_SetField(VALUE self, VALUE col, VALUE row, VALUE type, 
 
   cols = NUM2INT(rb_ivar_get(self, IVAR_COLS));
   rows = NUM2INT(rb_ivar_get(self, IVAR_ROWS));
-  if (icol >= cols || irow >= rows)
+  if (icol < 0 || irow < 0 || icol >= cols || irow >= rows)
     rb_raise(rb_eRuntimeError, "attempting to set a field at an invalid position (%d, %d)", icol, irow);
 
   INIT_GUARD();
   if (itype == NEWT_GRID_SUBGRID) {
     Data_Get_Struct(val, struct grid_s, co);
-  } else {
+  } else if (itype == NEWT_GRID_COMPONENT) {
     Get_Widget_Data(val, co);
     co = ((Widget_data *) co)->co;
+  } else if (itype == NEWT_GRID_EMPTY) {
+    co = NULL;
+  } else {
+    rb_raise(rb_eArgError, "invalid grid field type: %d", itype);
   }
 
   Data_Get_Struct(self, struct grid_s, grid);
   newtGridSetField(grid, icol, irow, itype, co, NUM2INT(padLeft),
                    NUM2INT(padTop), NUM2INT(padRight), NUM2INT(padBottom),
                    NUM2INT(anchor), NUM2INT(flags));
+  if (itype != NEWT_GRID_EMPTY)
+    Data_Attach(self, val);
 
   return Qnil;
 }
@@ -1774,6 +1850,8 @@ static VALUE rb_ext_Grid_GetSize(VALUE self)
 }
 
 void Init_ruby_newt(){
+  rb_ext_color_values = rb_hash_new();
+  rb_global_variable(&rb_ext_color_values);
   mNewt = rb_define_module("Newt");
   rb_define_module_function(mNewt, "init", rb_ext_Screen_Init, 0);
   rb_define_module_function(mNewt, "finish", rb_ext_Screen_Finished, 0);

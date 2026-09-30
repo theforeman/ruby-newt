@@ -73,6 +73,27 @@ class TestListbox < Minitest::Test
     assert_equal(['item3', 10], @lb.get(2))
   end
 
+  def test_set_data_releases_replaced_value
+    data = Object.new
+    @lb.set_data(0, data)
+    assert(retained_data?(data))
+
+    @lb.set_data(0, 100)
+    refute(retained_data?(data))
+  end
+
+  def test_set_data_does_not_duplicate_retained_value
+    data = Object.new
+    @lb.set_data(0, data)
+    @lb.set_data(0, data)
+
+    roots = @lb.instance_variable_get(:@newt_ivar_data)
+    assert_equal(1, roots.count { |root| root.equal?(data) })
+
+    @lb.set_data(0, 100)
+    refute(retained_data?(data))
+  end
+
   def test_append
     @lb.append('item6', 6)
     assert_equal(['item6', 6], @lb.get(5))
@@ -95,6 +116,11 @@ class TestListbox < Minitest::Test
     assert_equal(['item3', 3], @lb.get(2))
   end
 
+  def test_get_rejects_out_of_range_indexes
+    assert_raises(IndexError) { @lb.get(-1) }
+    assert_raises(IndexError) { @lb.get(@lb.item_count) }
+  end
+
   def test_set
     @lb.set(2, 'newitem3')
     assert_equal(['newitem3', 3], @lb.get(2))
@@ -106,10 +132,28 @@ class TestListbox < Minitest::Test
     assert_equal(3, @lb.item_count)
   end
 
+  def test_delete_releases_data
+    data = Object.new
+    @lb.append('temporary', data)
+    assert(retained_data?(data))
+
+    @lb.delete(data)
+    refute(retained_data?(data))
+  end
+
   def test_clear
     assert_equal(5, @lb.item_count)
     @lb.clear
     assert_equal(0, @lb.item_count)
+  end
+
+  def test_clear_releases_data
+    data = Object.new
+    @lb.append('temporary', data)
+    assert(retained_data?(data))
+
+    @lb.clear
+    refute(retained_data?(data))
   end
 
   def test_get_selection
@@ -140,6 +184,12 @@ class TestListbox < Minitest::Test
       @lb.append("item#{i}", nil)
     end
     assert_equal(rnd, @lb.item_count)
+  end
+
+  private
+
+  def retained_data?(data)
+    @lb.instance_variable_get(:@newt_ivar_data).any? { |root| root.equal?(data) }
   end
 end
 

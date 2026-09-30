@@ -33,6 +33,17 @@ class TestGrid < Minitest::Test
     end
   end
 
+  def test_invalid_negative_field_position
+    grid = Newt::Grid.new(2, 1)
+    b = Newt::Button.new(-1, -1, 'Button')
+
+    [[-1, 0], [0, -1]].each do |col, row|
+      assert_raises(RuntimeError) do
+        grid.set_field(col, row, Newt::GRID_COMPONENT, b, 0, 0, 0, 0, 0, 0)
+      end
+    end
+  end
+
   def test_new
     Newt::Grid.new(2, 2)
   end
@@ -44,6 +55,41 @@ class TestGrid < Minitest::Test
     grid = Newt::Grid.new(2, 1)
     grid.set_field(0, 0, Newt::GRID_COMPONENT, b1, 0, 0, 0, 0, 0, 0)
     grid.set_field(1, 0, Newt::GRID_COMPONENT, b2, 0, 0, 0, 0, 0, 0)
+  end
+
+  def test_set_empty_field
+    grid = Newt::Grid.new(1, 1)
+
+    assert_nil(grid.set_field(0, 0, Newt::GRID_EMPTY, nil, 0, 0, 0, 0, 0, 0))
+  end
+
+  def test_set_subgrid_field
+    subgrid = Newt::Grid.new(1, 1)
+    button = Newt::Button.new(-1, -1, 'Button')
+    subgrid.set_field(0, 0, Newt::GRID_COMPONENT, button, 0, 0, 0, 0, 0, 0)
+    expected_size = subgrid.get_size
+
+    grid = Newt::Grid.new(1, 1)
+    grid.set_field(0, 0, Newt::GRID_SUBGRID, subgrid, 0, 0, 0, 0, 0, 0)
+    subgrid = nil
+    GC.start
+
+    assert_equal(expected_size, grid.get_size)
+  end
+
+  def test_invalid_field_type
+    grid = Newt::Grid.new(1, 1)
+    assert_raises(ArgumentError) do
+      grid.set_field(0, 0, -1, nil, 0, 0, 0, 0, 0, 0)
+    end
+  end
+
+  def test_grid_retains_component_wrappers
+    grid = Newt::Grid.new(1, 1)
+    grid.set_field(0, 0, Newt::GRID_COMPONENT, temporary_button, 0, 0, 0, 0, 0, 0)
+
+    GC.start
+    assert_equal(2, grid.get_size.length)
   end
 
   def test_wrapped_window
@@ -74,6 +120,12 @@ class TestGrid < Minitest::Test
     grid.set_field(0, 0, Newt::GRID_COMPONENT, b1, 0, 0, 0, 0, 0, 0)
     grid.set_field(1, 0, Newt::GRID_COMPONENT, b2, 0, 0, 0, 0, 0, 0)
     assert_equal([24, 4], grid.get_size)
+  end
+
+  private
+
+  def temporary_button
+    Newt::Button.new(-1, -1, 'B')
   end
 end
 
